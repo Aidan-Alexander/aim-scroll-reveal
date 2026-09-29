@@ -30,9 +30,9 @@
          <strong> = the burgundy emphasis. See README for the rare cases where
          you want to control the split by hand.                              -->
 
-    <p class="vs-reveal__p">Choose a predictable path, the career everyone thinks is great, but feels empty. Keep wondering if you&rsquo;re really changing anyone&rsquo;s life.</p>
+    <p class="vs-reveal__p">Choose the predictable path.. the career everyone thinks is great. Choose the promotion. Choose the nagging feeling that you never did something real with your life.</p>
 
-    <p class="vs-reveal__p">Or choose <strong>impact</strong>. Choose to use your time and talent to <strong>help others</strong>. Follow the evidence and <strong>build something that matters</strong>.</p>
+    <p class="vs-reveal__p">Or choose <strong>impact</strong>. Choose to <strong>follow the evidence</strong>, wherever it leads. Choose red-eye flights and ungodly heat. Choose saving the <strong>lives</strong> of thousands of people you&rsquo;ll never meet. Choose more <strong>meaning</strong> than you know what to do with.</p>
 
   </div>
 </div>
@@ -43,8 +43,9 @@
   /* ---- TUNE THESE ---- */
   --vs-color:      #0B0F0E;   /* typed words */
   --vs-bold-color: #8B0A2F;   /* typed words inside <strong> */
-  --vs-muted:      #C6C2BC;   /* words not typed yet */
-  --vs-size:       clamp(1.6rem, min(4.2vw, 7.5vh), 3.8rem);  /* vh guard: short windows shrink */
+  --vs-muted:      transparent;   /* words not typed yet: invisible. A colour (e.g. #C6C2BC) shows them as grey ghost text instead */
+  --vs-start-scale: 0.85;     /* size of a paragraph whose turn hasn't come (it grows to full size when it does) */
+  --vs-size:       clamp(1.5rem, min(3.8vw, 5.6vh), 3.6rem);  /* vh guard: short windows shrink; the script shrinks further if the text still won't fit */
   --vs-leading:    1.3;
   --vs-gap:        1.4em;   /* space between the paragraphs */
   --vs-maxwidth:   1320px;  /* max line length */
@@ -114,10 +115,20 @@
   color: var(--vs-w, var(--vs-muted)) !important;
 }
 
-/* No script (CDN blocked) or reduced motion: everything in its final colour. */
+/* Until the script has set things up, the text is already in its resting
+   state (muted, later paragraphs small), so nothing flashes black first. */
+.vs-reveal:not(.is-ready) .vs-reveal__p,
+.vs-reveal:not(.is-ready) .vs-reveal__p strong { color: var(--vs-muted) !important; }
+.vs-reveal:not(.is-ready) .vs-reveal__p + .vs-reveal__p { transform: scale(var(--vs-start-scale)); }
+
+/* No script (CDN blocked) or reduced motion: everything in its final state. */
+.vs-reveal.is-static .vs-reveal__p        { color: var(--vs-color) !important; transform: none !important; opacity: 1 !important; }
+.vs-reveal.is-static .vs-reveal__p strong { color: var(--vs-bold-color) !important; }
 .vs-reveal.is-static .vs-u        { --vs-w: var(--vs-color); }
 .vs-reveal.is-static strong .vs-u { --vs-w: var(--vs-bold-color); }
 @media (prefers-reduced-motion: reduce) {
+  .vs-reveal .vs-reveal__p        { color: var(--vs-color) !important; transform: none !important; opacity: 1 !important; }
+  .vs-reveal .vs-reveal__p strong { color: var(--vs-bold-color) !important; }
   .vs-reveal .vs-u        { --vs-w: var(--vs-color) !important; }
   .vs-reveal strong .vs-u { --vs-w: var(--vs-bold-color) !important; }
 }
@@ -133,10 +144,10 @@
 }
 
 /* Phones only: bump the type up. The desktop clamp bottoms out at
-   1.6rem on narrow screens, which reads small on a phone.         */
+   1.5rem on narrow screens, which reads small on a phone.         */
 @media (max-width: 767px) {
   .vs-reveal {
-    --vs-size:     clamp(1.6rem, 7.5vw, 2.3rem);
+    --vs-size:     clamp(1.4rem, 6.5vw, 2.1rem);
     --vs-leading:  1.25;
     --vs-gap:      1.1em;
     --vs-pad:      clamp(1rem, 6vw, 2rem);
@@ -154,7 +165,7 @@
   var CFG = {
     mode:         'gesture',  // 'gesture' = version A: each scroll gesture types one sentence, the page waits
                               // 'scroll'  = version B: sentences type as you scroll past them, nothing is held
-    typing:       'words',    // 'words' or 'chars': what lights up one at a time
+    typing:       'chars',    // 'chars' (letters, in bursts) or 'words' (whole words on an even beat)
 
     // Scroll geometry, in screen-heights
     stepDistance: 0.5,        // scrolling per sentence (version B; version A snaps by the same amount)
@@ -163,11 +174,14 @@
     holdGesture:  0.3,        // version A: same, but the page only moves when you gesture anyway
 
     // Typing feel, in seconds
-    wordTime:     0.16,       // one word's fade from muted to full
-    wordStagger:  0.045,      // gap between one word starting and the next
-    charTime:     0.08,       // same two, for 'chars'
-    charStagger:  0.014,
-    maxStepTime:  1.1,        // long sentences speed up so none takes longer than this
+    wordTime:     0.05,       // one word's switch from muted to full: near-instant, like a keystroke
+    wordStagger:  0.12,       // gap between one word appearing and the next
+    charTime:     0.03,       // same two, for 'chars': inside a burst, letters land this far apart...
+    charStagger:  0.03,
+    charPause:    0.13,       // ...and bursts are broken by pauses about this long (random 0.6x-1.8x, longer after punctuation)
+    charJitter:   0.6,        // how stop-start the letters are: 0 = every letter on the beat, no pauses; 1 = very jerky
+    wordJitter:   0,          // same idea for 'words'; 0 keeps the even rhythm
+    maxStepTime:  2.0,        // long sentences speed up so none takes longer than this
 
     // Earlier paragraph when a new one starts
     dimOpacity:   0.5,
@@ -344,7 +358,8 @@
     if (!paras.length) return;
 
     // Steps: one per sentence, in reading order. The first sentence of a
-    // paragraph also dims the paragraph before it.
+    // later paragraph also moves the focus: the paragraph before it recedes
+    // (dims and shrinks) and this one grows to full size.
     var steps = [], allUnits = [];
     paras.forEach(function (p, pi) {
       splitSentences(collectWords(p)).forEach(function (group, gi) {
@@ -354,13 +369,14 @@
           else units.push(w.el);
         });
         allUnits.push.apply(allUnits, units);
-        steps.push({ units: units, dim: (gi === 0 && pi > 0) ? [paras[pi - 1]] : [] });
+        var first = gi === 0 && pi > 0;
+        steps.push({ units: units, dim: first ? [paras[pi - 1]] : [], grow: first ? [paras[pi]] : [] });
       });
     });
     var N = steps.length;
     if (!N) return;
 
-    if (reduced) { block.classList.add('is-static'); return; }
+    if (reduced) { block.classList.add('is-ready', 'is-static'); return; }
 
     var cs = getComputedStyle(block);
     var colText  = cs.getPropertyValue('--vs-color').trim() || '#000';
@@ -368,6 +384,12 @@
     var colMuted = cs.getPropertyValue('--vs-muted').trim() || '#bbb';
     allUnits.forEach(function (u) { u.__vsTarget = u.closest('strong, b') ? colBold : colText; });
     gsap.set(allUnits, { '--vs-w': colMuted });
+
+    // Later paragraphs wait at the small size until their turn; then the CSS
+    // resting state hands over to the script (same colours, same size, no flash).
+    var startScale = parseFloat(cs.getPropertyValue('--vs-start-scale')) || 0.85;
+    if (paras.length > 1) gsap.set(paras.slice(1), { scale: startScale });
+    block.classList.add('is-ready');
 
     // ---- state ----
     var gesture = CFG.mode === 'gesture';
@@ -398,23 +420,54 @@
     // it, last word first) and, for a paragraph's first sentence, dim the
     // paragraph before.
     var chars = CFG.typing === 'chars';
+
+    // When each unit (word or letter) switches on, relative to the start of
+    // its sentence. Even spacing by default. With jitter > 0, letters come in
+    // bursts: short runs at the base rate, broken by pauses that fall mostly
+    // at word boundaries and after punctuation, now and then mid-word. Then,
+    // if the sentence would run past maxStepTime, everything is squeezed to fit.
+    function startTimes(units, base, dur, jitter) {
+      var t = 0, times = [0], n = units.length;
+      for (var i = 1; i < n; i++) {
+        var gap = base;
+        if (jitter > 0) {
+          gap *= 1 + jitter * 0.4 * (Math.random() * 2 - 1);                  // slight unevenness inside a burst
+          if (chars) {
+            var prev = units[i - 1];
+            var newWord = prev.parentNode !== units[i].parentNode;
+            var afterPunct = /[,;:.!?…]/.test(prev.textContent);
+            if (newWord) gap += base;                                          // the space keystroke
+            var pauseChance = jitter * (afterPunct ? 1.4 : newWord ? 0.75 : 0.08);
+            if (Math.random() < pauseChance) {                                 // a burst ends here
+              gap += CFG.charPause * (0.6 + Math.random() * 1.2) * (afterPunct ? 1.6 : 1);
+            }
+          }
+        }
+        t += gap;
+        times.push(t);
+      }
+      var room = Math.max(0.05, CFG.maxStepTime - dur);
+      if (t > room) for (var j = 0; j < n; j++) times[j] *= room / t;
+      return times;
+    }
+
     var tls = [null];
     steps.forEach(function (step, i) {
-      var k = i + 1, n = step.units.length;
+      var k = i + 1;
       var dur = chars ? CFG.charTime : CFG.wordTime;
-      var gap = chars ? CFG.charStagger : CFG.wordStagger;
-      gap = Math.min(gap, Math.max(0.005, (CFG.maxStepTime - dur) / Math.max(1, n - 1)));
+      var times = startTimes(step.units, chars ? CFG.charStagger : CFG.wordStagger, dur,
+                             chars ? CFG.charJitter : CFG.wordJitter);
       var tl = gsap.timeline({
         paused: true,
         onComplete:        function () { shown = k;     active = null; announce(); tick(); },
         onReverseComplete: function () { shown = k - 1; active = null; announce(); tick(); }
       });
-      tl.to(step.units, {
-        '--vs-w': function (idx, el) { return el.__vsTarget; },
-        duration: dur, stagger: gap, ease: 'none'
-      }, 0);
+      step.units.forEach(function (u, j) {
+        tl.to(u, { '--vs-w': u.__vsTarget, duration: dur, ease: 'none' }, times[j]);
+      });
       if (step.dim.length) {
-        tl.to(step.dim, { opacity: CFG.dimOpacity, scale: CFG.dimScale, duration: CFG.dimTime, ease: 'power2.out' }, 0);
+        tl.to(step.dim,  { opacity: CFG.dimOpacity, scale: CFG.dimScale, duration: CFG.dimTime, ease: 'power2.out' }, 0);
+        tl.to(step.grow, { scale: 1, duration: CFG.dimTime, ease: 'power2.out' }, 0);
       }
       tls.push(tl);
     });
@@ -454,6 +507,21 @@
       return k;
     }
     function anchor(k) { var g = geo(); return st.start + threshold(k, g) + g.margin; }
+
+    // Fit: if the text is taller than the screen (long copy, short window),
+    // shrink the type until it isn't. Re-run whenever ScrollTrigger re-measures.
+    var inner = block.querySelector('.vs-reveal__inner') || block;
+    function fit() {
+      block.style.removeProperty('--vs-size');
+      var avail = window.innerHeight * 0.88;
+      var size = parseFloat(getComputedStyle(paras[0]).fontSize), guard = 0;
+      while (inner.offsetHeight > avail && guard++ < 14) {
+        size *= 0.94;
+        block.style.setProperty('--vs-size', size.toFixed(2) + 'px');
+      }
+    }
+    fit();
+    ScrollTrigger.addEventListener('refreshInit', fit);
 
     st = ScrollTrigger.create({
       trigger: block,
@@ -578,7 +646,7 @@
     // Handy in the console / for the preview page.
     window.__vsReveal = window.__vsReveal || [];
     window.__vsReveal.push({
-      block: block, steps: N, config: CFG, trigger: st,
+      block: block, steps: N, config: CFG, trigger: st, timelines: tls.slice(1),
       step: function () { return desired; },
       goTo: function (k) { gesture ? snapTo(k) : setDesired(k); }
     });
@@ -600,7 +668,7 @@
       : load(GSAP_URL).then(function () { return load(ST_URL); });
     chain.then(init).catch(function (e) {
       // If the CDN is blocked, show the text rather than a muted screen.
-      document.querySelectorAll('.vs-reveal').forEach(function (el) { el.classList.add('is-static'); });
+      document.querySelectorAll('.vs-reveal').forEach(function (el) { el.classList.add('is-ready', 'is-static'); });
       console.error('[vs-reveal]', e);
     });
   }

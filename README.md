@@ -13,7 +13,7 @@ The full-screen section on the new AIM Squarespace site that tells a two-paragra
 
 On phones both versions behave like B: touch scrolling is never intercepted.
 
-Either way the typing itself is a fixed, quick animation (about 0.7s for a 15-word sentence), so it looks the same however fast or slow someone scrolls. `typing: 'chars'` lights letters instead of words, for a more literal typewriter feel.
+Either way the typing itself is a fixed animation, so it looks the same however fast or slow someone scrolls. By default letters appear one at a time in bursts and pauses, like someone typing quickly (no sentence takes longer than `maxStepTime`, 2s); `typing: 'words'` switches to whole words on an even beat. Un-typed text is invisible until typed (`--vs-muted: transparent`), so each sentence types into empty space; give that variable a colour, e.g. `#C6C2BC`, to show the coming text as grey ghost text instead (the preview's "grey until typed" toggle). The second paragraph waits at 85% size until its first sentence; then it grows to full size as the first paragraph fades and shrinks.
 
 ## Editing the text
 
@@ -26,12 +26,14 @@ The text is the two `<p class="vs-reveal__p">` paragraphs near the top of the fi
 
 ## Tuning
 
-Colours and type are CSS variables at the top of the `<style>` (`--vs-color`, `--vs-bold-color`, `--vs-muted` for un-typed words, `--vs-size`, `--vs-gap`, `--vs-maxwidth`). Timing and scroll geometry are in `CFG` at the top of the `<script>`; each line is commented. The ones that matter most:
+Colours and type are CSS variables at the top of the `<style>` (`--vs-color`, `--vs-bold-color`, `--vs-muted` for un-typed words, `--vs-start-scale` for a paragraph whose turn hasn't come, `--vs-size`, `--vs-gap`, `--vs-maxwidth`). If the copy is too tall for the window at that size, the script shrinks the type until it fits, so long text never gets cut off. Timing and scroll geometry are in `CFG` at the top of the `<script>`; each line is commented. The ones that matter most:
 
 - `mode`: `'gesture'` (A) or `'scroll'` (B).
 - `stepDistance`: screen-heights of scrolling per sentence in version B (0.5).
 - `hold` / `holdGesture`: how long the finished text stays before the page moves on.
-- `wordTime`, `wordStagger`, `maxStepTime`: the typing speed.
+- `charStagger`, `charPause`, `maxStepTime`: the typing speed. Letters land `charStagger` apart inside a burst; bursts are broken by pauses around `charPause` long (random, longer after punctuation); `maxStepTime` caps a whole sentence, squeezing long ones.
+- `charJitter` / `wordJitter`: how stop-start the rhythm is. 0 is metronomic with no pauses; letter mode defaults to 0.6 (pauses mostly at word boundaries and after punctuation, now and then mid-word); 1 is very jerky. Word mode defaults to 0.
+- `wordTime`, `wordStagger`: the same for word mode.
 - `dimOpacity`, `dimScale`: how far the earlier paragraph recedes.
 
 Fonts are copied at runtime from the page's real headings and a real `<strong>`, as before (see the comments in the CSS), so nothing font-related should need touching unless Squarespace renames the font.
