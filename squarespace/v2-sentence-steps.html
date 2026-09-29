@@ -11,7 +11,7 @@
   Edits made only inside Squarespace are lost the next time someone pastes.
 
   Two behaviours, switched by `mode` in CONFIG below:
-    'gesture'  version A (in use): every scroll gesture types one sentence;
+    'gesture'  version A (in use): every scroll gesture, click or tap types one sentence;
                the page waits on the section until the story is told
     'scroll'   version B: sentences type as you scroll past them; nothing
                is ever held
@@ -39,7 +39,8 @@
     <p class="vs-reveal__p">Or choose <strong>impact</strong>. Choose to <strong>follow the evidence</strong>, wherever it leads. Choose red-eye flights and ungodly heat. Choose saving the <strong>lives of thousands of people</strong> you&rsquo;ll never meet. Choose more <strong>meaning</strong> than you know what to do with..</p>
 
     <!-- THE WORDMARK. Appears last, word by word, after the paragraphs; paragraph 2 stays as it is.
-         Any inline SVG works: wrap each word's <path>s in a <g data-vs-word="..."> as below. -->
+         Any inline SVG works: wrap each word's <path>s in a <g data-vs-word="..."> as below.
+         On phones the words inside <g data-vs-line="2"> drop to a second line. -->
     <div class="vs-reveal__mark" role="img" aria-label="Start something that matters">
       <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000.83 54.53">
         <g data-vs-word="START">
@@ -64,6 +65,7 @@
           <path d="M483.76,11.84l-6.2,29.2c-.74,3.29-.37,4.22,2.6,5.52l-.37,1.67-4.46-.12-4.53.12.37-1.67c3.47-1.3,4.22-2.23,4.96-5.52l6.14-29.01c.68-3.35.31-4.28-2.6-5.52l.37-1.67h5.21l15.81,36.39,6.14-29.2c.68-3.29.37-4.22-2.6-5.52l.37-1.67,4.46.12,4.59-.12-.37,1.67c-3.47,1.3-4.28,2.23-4.96,5.52l-7.69,36.21h-1.49l-15.75-36.39Z"/>
           <path d="M527.03,48.85c-11.53,0-17.05-9.11-14.26-22.26,2.85-13.33,12.46-22.38,23.74-22.38,4.96,0,8.87,1.43,12.77,4.4l-3.29,9.42h-1.49c-.12-2.29-.5-7.69-.68-10.04-2.42-1.74-4.15-2.36-6.57-2.36-9.05,0-17.11,7.25-19.9,20.4-2.73,12.83.62,21.39,11.22,21.39,4.22,0,8.74-2.73,10.48-6.39l1.49-7.01c.68-3.35-2.36-4.22-5.27-5.52l.31-1.36,7.07.12,5.83-.12-.25,1.36c-1.74.81-2.85,2.17-3.53,5.52l-1.61,7.38c-3.22,4.22-9.8,7.44-16.06,7.44Z"/>
         </g>
+        <g data-vs-line="2">
         <g data-vs-word="THAT">
           <path d="M586.43,46.56l-.37,1.67-5.89-.12-5.83.12.37-1.67c3.47-1.3,4.22-2.23,4.96-5.52l7.25-34.35h-10.04c-1.18,2.23-2.98,5.95-3.72,7.75h-1.49l.81-9.61h34.1l-3.29,9.61h-1.55c.06-1.8-.19-5.52-.43-7.75h-10.23l-7.25,34.35c-.74,3.29-.37,4.22,2.6,5.52Z"/>
           <path d="M609.99,6.2l.31-1.36,5.77.12,5.95-.12-.31,1.36c-3.53,1.3-4.28,2.23-5.02,5.64l-2.73,13.14h20.65l2.79-13.14c.68-3.41.37-4.34-2.6-5.64l.31-1.36,5.77.12,5.95-.12-.31,1.36c-3.53,1.3-4.28,2.23-5.02,5.64l-6.2,29.39c-.74,3.41-.37,4.34,2.54,5.64l-.25,1.36-5.89-.12-5.83.12.31-1.36c3.47-1.3,4.22-2.23,4.96-5.64l3.1-14.82h-20.65l-3.1,14.82c-.74,3.41-.37,4.34,2.54,5.64l-.25,1.36-5.89-.12-5.83.12.31-1.36c3.47-1.3,4.22-2.23,4.96-5.64l6.26-29.39c.68-3.41.37-4.34-2.6-5.64Z"/>
@@ -78,6 +80,7 @@
           <path d="M899.03,6.2l.31-1.36h30.94l-3.29,9.61h-1.55c.06-1.92-.31-5.89-.5-8.18h-17.98l-3.97,18.72h11.78c3.35,0,4.65-1.86,6.63-5.08h1.36l-1.3,5.77-1.12,5.77h-1.43c-.62-3.22-1.18-5.02-4.53-5.02h-11.78l-4.34,20.4h18.66c1.18-2.29,3.29-6.26,4.03-8.18h1.49l-.81,9.61h-31.56l.31-1.36c3.47-1.3,4.22-2.23,4.96-5.64l6.26-29.45c.68-3.35.37-4.28-2.6-5.58Z"/>
           <path d="M934.61,4.84h18.54c8.55,0,12.58,4.22,11.1,11.22-1.43,6.51-6.45,10.54-13.7,11.04l4.15,14.2c.87,2.98,2.42,4.28,5.39,5.58l-.31,1.36-6.01-.12-6.01.12.31-1.36c3.53-1.3,3.04-2.6,2.17-5.58l-4.09-14.07h-8.43l-2.91,14.01c-.74,3.41-.37,4.34,2.54,5.64l-.25,1.36-5.89-.12-5.83.12.31-1.36c3.47-1.3,4.22-2.23,4.96-5.64l6.26-29.45c.68-3.35.37-4.28-2.6-5.58l.31-1.36ZM948.62,25.79c5.77,0,9.92-3.84,11.16-9.73,1.24-5.95-1.18-9.8-6.94-9.8h-10.6l-4.22,19.53h10.6Z"/>
           <path d="M970.76,15.5c1.49-6.94,8.06-11.28,17.54-11.28,4.71,0,8.74,1.43,12.52,4.4l-3.29,9.42h-1.49c-.12-2.23-.5-7.44-.68-9.86-2.67-1.92-4.09-2.54-6.76-2.54-7.5,0-12.09,3.66-13.21,8.8-2.67,12.9,23.06,8.31,19.9,23.12-1.74,8.12-9.86,11.28-18.29,11.28-4.96,0-9.18-1.43-13.02-4.4l3.29-9.42h1.49c.12,2.23.43,7.44.68,9.86,2.73,1.98,4.34,2.54,7.19,2.54,6.26,0,12.59-2.11,13.95-8.62,2.73-13.02-22.94-8.62-19.84-23.31Z"/>
+        </g>
         </g>
       </svg>
     </div>
@@ -111,7 +114,8 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  min-height: 100svh;
+  min-height: 100lvh;   /* the screen as it is while scrolling (phone browser bars hidden), so the
+                           content is centred on what you actually see when the section pins */
   background: transparent;
 }
 
@@ -188,6 +192,11 @@
 .vs-reveal__mark svg { display: block; width: 100%; height: auto; }
 .vs-reveal__mark path { fill: var(--vs-mark-color); }
 
+/* While the section is pinned (version A), swipes on it are the script's:
+   one swipe, one sentence, so the browser mustn't pan for them. Pinch-zoom
+   stays allowed where the browser supports saying so. */
+.vs-reveal.is-touchlocked { touch-action: none; touch-action: pinch-zoom; }
+
 /* Until the script has set things up, everything is already in its resting
    state (text invisible, later paragraphs small, wordmark hidden), so
    nothing flashes first. */
@@ -243,6 +252,7 @@
     mode:         'gesture',  // 'gesture' = version A: each scroll gesture types one sentence, the page waits
                               // 'scroll'  = version B: sentences type as you scroll past them, nothing is held
     caret:        true,       // a blinking cursor at the end of the typed text (steady while typing, gone for the wordmark)
+    debug:        false,      // record every scroll decision in window.__vsLog, for diagnosing (the preview's ?debug=1 turns it on)
 
     // Scroll geometry, in screen-heights
     stepDistance: 0.5,        // scrolling per sentence (version B; version A snaps by the same amount)
@@ -264,12 +274,22 @@
     markWordTime: 0.3,        // seconds a word takes to fade in
     markGaps:     [0.32, 0.6, 0.32],   // seconds between words: start>something, something>that, that>matters (the last value repeats if there are more)
     markPopFrom:  0.85,       // each word swells in from this size, overshooting a touch (1 = no pop)
+    markTwoLines: '(max-width: 767px)',   // screens where the wordmark breaks onto two lines (the words in <g data-vs-line="2"> drop), so it can be larger
+    markLineGap:  0.2,        // space between those two lines, as a fraction of a line's height
 
     // Impatient scrolling
     hurryWindow:  700,        // ms: a gesture this soon after the last, or while a sentence is still typing, is a hurry
     hurryPace:    [1, 2.5, 6, 1000],   // typing speed after 0, 1, 2, 3+ hurried gestures in a row (1000 = instant); a pause resets it
-    hurryDelta:   250,        // px: while hurrying, every this-much of extra scrolling within one push is another step
+    hurryDelta:   250,        // px: once fast-forwarding (two quick swipes in a row), every this-much of extra scrolling within one push is another step
     catchUpPace:  4,          // speed when the scroll position jumps several sentences at once (scrollbar, End key)
+
+    // Leaving once the story is told (version A): the swipe that leaves glides the page on to the next section
+    exitTime:     0.9,        // seconds the glide takes; the rest of that swipe is absorbed, so even a big one can't fling the page
+
+    // Phones and tablets (version A): one swipe, one sentence
+    touchStep:       24,      // px the finger must travel for a swipe to count
+    touchUpDistance: 0.75,    // screen-heights a swipe back up on the section carries the page
+    touchUpTime:     0.6,     // seconds that takes
 
     // Scrolling back up once the story is told: no holding; the text is left behind in grey...
     spentTime:    0.3,        // ...this fast, then...
@@ -284,6 +304,7 @@
     snapTime:     0.4,        // seconds for the scroll position to settle on a step
     cooldown:     150,        // ms: gestures closer together than this count as one
     gestureGap:   150,        // ms of quiet that ends a gesture (trackpad inertia is a continuous stream)
+    arriveLock:   600,        // ms after arriving in which only a pause or a turn counts as a new swipe: a big arriving swipe is often still being pushed
 
     // Full stops that do not end a sentence (lower-case, no trailing dot)
     abbreviations: 'e.g i.e etc vs mr mrs ms dr prof st no cf approx'
@@ -445,6 +466,43 @@
     adoptFonts(block);
     var inner = block.querySelector('.vs-reveal__inner') || block;
 
+    // The wordmark on narrow screens: the words inside <g data-vs-line="2">
+    // drop to a second line, left-aligned under the first, and the viewBox is
+    // refitted to the two lines, so at the same width the mark is much larger.
+    // Measured from the paths themselves, so it follows whatever artwork is in
+    // there, and redone whenever the screen crosses the breakpoint.
+    var markSvg = block.querySelector('.vs-reveal__mark svg');
+    var markLine2 = markSvg ? markSvg.querySelector('[data-vs-line="2"]') : null;
+    var markViewBox = markSvg ? markSvg.getAttribute('viewBox') : null;
+    var markNarrow = window.matchMedia(CFG.markTwoLines);
+    function growBox(a, b) { return a ? { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), r: Math.max(a.r, b.r), btm: Math.max(a.btm, b.btm) } : b; }
+    function layoutMark() {
+      if (!markLine2 || !markViewBox) return;
+      markLine2.removeAttribute('transform');
+      markSvg.setAttribute('viewBox', markViewBox);
+      if (!markNarrow.matches) return;
+      try {
+        var one = null, two = null;
+        Array.prototype.forEach.call(markSvg.querySelectorAll('path'), function (p) {
+          var b = p.getBBox();
+          if (b.width < 1 && b.height < 1) return;                   // specks
+          var box = { x: b.x, y: b.y, r: b.x + b.width, btm: b.y + b.height };
+          if (markLine2.contains(p)) two = growBox(two, box); else one = growBox(one, box);
+        });
+        if (!one || !two) return;
+        var dx = one.x - two.x, dy = one.btm + (one.btm - one.y) * CFG.markLineGap - two.y;
+        markLine2.setAttribute('transform', 'translate(' + dx.toFixed(2) + ' ' + dy.toFixed(2) + ')');
+        var right = Math.max(one.r, two.r + dx), bottom = two.btm + dy;
+        markSvg.setAttribute('viewBox', [one.x, one.y, right - one.x, bottom - one.y].map(function (v) { return v.toFixed(2); }).join(' '));
+      } catch (e) {                                                   // can't measure: keep the one-line mark
+        markLine2.removeAttribute('transform');
+        markSvg.setAttribute('viewBox', markViewBox);
+      }
+    }
+    layoutMark();
+    if (markNarrow.addEventListener) markNarrow.addEventListener('change', layoutMark);
+    else if (markNarrow.addListener) markNarrow.addListener(layoutMark);
+
     var PUNCT = /[,;:.!?…]/;
 
     // The wordmark's <path>s grouped into words. Preferred: the SVG says so,
@@ -565,15 +623,33 @@
     var pace = 1, hurry = 0, lastGestureTs = -1e9;   // impatient scrolling: current speed, and how hurried the last gestures were
     var rewinding = false, rewindSeq = null;        // scrolling back up after the end
     var parked = false;                             // scrolled up mid-story: the place is kept for when you come back
-    var armed = true, tailAccum = 0, risingRun = 0; // wheel bookkeeping, see isNewGesture / onWheel
+    var exiting = false;                            // the glide that leaves once the story is told is under way
+    var tailAccum = 0, risingRun = 0, gPeak = 0, gLow = 0, lastV = 0, detectFrom = 0;   // wheel bookkeeping, see isNewGesture / onWheel
+    var lastDt = Infinity, lastDt2 = Infinity, lastDt3 = Infinity, lastSwipeTs = -1e9;
     var st;
 
     // version A input state
     var proxy = { y: 0 };
     var consumed = false;     // the gesture in progress was taken by us (so swallow its inertia tail)
     var touching = false;
-    var lockUntil = 0, lastInputTs = -1e9, gestureStart = 0, lastSign = 0;
+    var lockUntil = 0, lastInputTs = -1e9, lastSign = 0;
     var hist = [];            // recent wheel samples {t, mag}
+
+    // version A touch state
+    var root = document.documentElement;
+    var tX = 0, tY = 0, tOurs = false, tUsed = false, lastTouchTs = -1e9;   // the swipe in progress, if it began on the pinned section
+    var frozen = null;        // while a touch fling is being stopped: the page's own overflow value, to put back
+    var holding = false, holdTimer = null;   // backstop for a fling the freeze didn't stop: keep the page on the sentence
+
+    // Debug recorder (CFG.debug): every wheel decision and every step, in window.__vsLog.
+    var log = CFG.debug ? (window.__vsLog = []) : null, wheelFresh = null;
+    function note(kind, o) {
+      if (!log) return;
+      var r = { k: kind, t: Math.round(performance.now()), y: Math.round(window.pageYOffset), want: desired, shown: shown, pinned: !!(st && st.isActive) };
+      if (o) for (var key in o) r[key] = o[key];
+      log.push(r);
+      if (log.length > 6000) log.splice(0, 2000);
+    }
 
     function announce() {
       try {
@@ -696,6 +772,7 @@
     // Fit: if the text is taller than the screen (long copy, short window),
     // shrink the type until it isn't. Re-run whenever ScrollTrigger re-measures.
     function fit() {
+      layoutMark();                                                   // the wordmark's shape changes its height
       block.style.removeProperty('--vs-size');
       var avail = window.innerHeight * 0.88;
       var size = parseFloat(getComputedStyle(paras[0]).fontSize), guard = 0;
@@ -718,24 +795,47 @@
       invalidateOnRefresh: true,
       onUpdate: function (self) {
         if (snapping) return;
+        if (holding) { holdQuiet(); scrollWindowTo(anchor(desired)); return; }  // a touch fling still coasting: stay on the sentence (invisible inside the pin)
         if (rewinding) { if (self.direction > 0) endRewind(); else return; }     // turned back down: the story starts over
         else if (self.direction < 0 && desired === N) { rewind(); return; }      // finished and heading up: let go
-        setDesired(stepAt(self));
+        var k = stepAt(self);
+        if (log && k !== desired) note('scroll-step', { to: k });
+        setDesired(k);
       },
-      onLeave:     function () { if (!snapping) setDesired(N); },
-      onLeaveBack: function () { rewinding = false; if (!parked && !snapping) setDesired(0); },   // parked: the place is kept; a grey-out plays on
-      // Version A: arriving by wheel or keyboard types the first sentence at
-      // once (or, if you scrolled up mid-story, lands where you left off) and
-      // swallows the rest of that gesture: however big the swipe, nothing
-      // more happens until the next one. Coming back up from below, the
-      // finished text greys out and clears while the page keeps moving.
+      onLeave:     function () { note('leave'); lockTouch(false); unhold(); if (!snapping) setDesired(N); },
+      onLeaveBack: function () { note('leave-back'); lockTouch(false); unhold(); rewinding = false; if (!parked && !snapping) setDesired(0); },   // parked: the place is kept; a grey-out plays on
+      // Version A: arriving by wheel, keyboard or touch types the first
+      // sentence at once (or, if you scrolled up mid-story, lands where you
+      // left off) and swallows the rest of that gesture: however big the
+      // swipe, nothing more happens until the next one (a touch fling is
+      // stopped dead). Coming back up from below, the finished text greys out
+      // and clears while the page keeps moving.
       onEnter: function () {
         endRewind();
+        lockTouch(true);
         var back = parked; parked = false;
-        if (gesture && (recentInput() || back)) { consumed = true; armed = false; snapTo(back ? shown : 1, true); }
+        var byTouch = gesture && (touching || performance.now() - lastTouchTs < 2500), byWheel = recentInput();
+        note('enter', { byWheel: byWheel, byTouch: byTouch, back: back });
+        if (byTouch) freeze();
+        // The swipe that arrives began outside the section, and it can't be
+        // cancelled partway: Chrome only lets a page cancel a trackpad swipe
+        // (momentum included) if it cancelled the swipe's first event, and a
+        // touch fling can't be cancelled at all. So its momentum is held
+        // instead: every movement goes straight back to the sentence (see hold).
+        if (gesture && (byWheel || byTouch)) hold();
+        if (gesture && (byWheel || back || byTouch)) {
+          consumed = true; detectFrom = performance.now() + CFG.arriveLock;
+          snapTo(back ? shown : 1, true);
+        }
         if (!shown && !active) placeCaret(null);
       },
-      onEnterBack: function () { rewind(); if (gesture && recentInput()) leaveUp(); }
+      onEnterBack: function () {
+        note('enter-back');
+        lockTouch(true);
+        rewind();
+        if (gesture && recentInput()) leaveUp();
+        else if (gesture && (touching || performance.now() - lastTouchTs < 2500)) { freeze(); upGlide(); }
+      }
     });
 
     // Landing mid-section (reload, back button): show the state without animating.
@@ -768,14 +868,15 @@
         lastGestureTs = now;
         if (active && hurry) { if (active.reversed()) active.progress(0); else active.progress(1); }
       }
+      note('snap', { to: k, quiet: !!quiet, hurry: hurry });
       setDesired(k);                          // start typing straight away...
-      snapping = true;                        // ...and let the scroll position catch up
+      snapping = true; exiting = false;       // ...and let the scroll position catch up
       gsap.killTweensOf(proxy);
       proxy.y = window.pageYOffset;
       gsap.to(proxy, {
         y: anchor(k), duration: CFG.snapTime, ease: 'power2.out',
         onUpdate: function () { scrollWindowTo(proxy.y); },
-        onComplete: function () { scrollWindowTo(anchor(k)); snapping = false; ScrollTrigger.update(); }   // settle exactly, whatever the browser's own scroll animation did
+        onComplete: function () { scrollWindowTo(anchor(k)); snapping = false; thaw(); ScrollTrigger.update(); }   // settle exactly, whatever the browser's own scroll animation did
       });
     }
 
@@ -785,7 +886,7 @@
     function rewind() {
       if (rewinding) return;
       rewinding = true; parked = false; consumed = false; hurry = 0; pace = 1;
-      gsap.killTweensOf(proxy); snapping = false;
+      gsap.killTweensOf(proxy); snapping = exiting = false; unhold();
       if (active) {                                                 // settle the sentence in flight
         var fwd = !active.reversed();
         desired = fwd ? activeIdx : activeIdx - 1;
@@ -831,73 +932,249 @@
     // the gesture carry on natively from above it.
     function leaveUp() {
       if (!st.isActive) return;
-      gsap.killTweensOf(proxy); snapping = false;
+      gsap.killTweensOf(proxy); snapping = exiting = false; unhold();
       hurry = 0; pace = 1;
       parked = !rewinding && (shown > 0 || !!active);              // mid-story: keep the place for when you come back
       scrollWindowTo(st.start - 1);
     }
 
+    // Once the story is told, the swipe that leaves doesn't fling the page:
+    // it glides at a steady pace until the section has gone and the next one
+    // is at the top of the screen, and the rest of that swipe is absorbed.
+    // The rest of the pin looks identical (the section is pinned there), so
+    // the glide starts from its end and the section moves at once.
+    function exitGlide() {
+      exiting = snapping = true;
+      gsap.killTweensOf(proxy); unhold();
+      var scroller = document.scrollingElement || document.documentElement;
+      var from = Math.max(window.pageYOffset, st.end);
+      var to = Math.max(from, Math.min(st.end + block.offsetHeight, scroller.scrollHeight - window.innerHeight));
+      scrollWindowTo(from);
+      proxy.y = from;
+      gsap.to(proxy, {
+        y: to, duration: CFG.exitTime, ease: 'power1.inOut',
+        onUpdate: function () { scrollWindowTo(proxy.y); },
+        onComplete: function () { exiting = snapping = false; thaw(); ScrollTrigger.update(); }
+      });
+    }
+
+    // ---- touch: one swipe, one sentence (version A) ----
+    // While the section is pinned the page doesn't pan for touches that start
+    // on it (the is-touchlocked class sets touch-action), so a swipe can't
+    // fling through several sentences: each swipe that begins on the pinned
+    // section is one step, taken as soon as the finger has moved touchStep px.
+    function lockTouch(on) { if (gesture) block.classList.toggle('is-touchlocked', !!on); }
+
+    function onTouchStart(e) {
+      lastTouchTs = performance.now();
+      touching = true;
+      var t = e.touches && e.touches.length === 1 ? e.touches[0] : null;
+      tOurs = !!t && st.isActive && block.classList.contains('is-touchlocked');
+      tUsed = false;
+      if (t) { tX = t.clientX; tY = t.clientY; }
+    }
+    function onTouchMove(e) {
+      lastTouchTs = performance.now();
+      if (!tOurs) return;
+      if (e.cancelable) e.preventDefault();                           // belt and braces: touch-action already stops the pan
+      if (tUsed || !e.touches || e.touches.length !== 1) return;
+      var dy = tY - e.touches[0].clientY, dx = tX - e.touches[0].clientX;
+      if (Math.abs(dy) < CFG.touchStep || Math.abs(dy) < Math.abs(dx)) return;
+      tUsed = true;
+      try { swipe(dy > 0 ? 1 : -1); }
+      catch (err) { lockTouch(false); tOurs = false; console.error('[vs-reveal]', err); }   // never leave the page unscrollable
+    }
+    function onTouchEnd(e) {
+      lastTouchTs = performance.now();
+      touching = !!(e.touches && e.touches.length);
+      if (!touching) { tOurs = false; thaw(); }
+    }
+
+    function swipe(dir) {
+      lastSwipeTs = performance.now();
+      if (exiting) return;
+      if (dir < 0) { if (desired === N) rewind(); upGlide(); return; }   // back up: the page moves (the finished text greys out)
+      advance();
+    }
+
+    // One step forward, from a swipe, a click or a tap: the next sentence, or
+    // once the story is told, on to the next section.
+    function advance() {
+      var now = performance.now();
+      if (exiting) return;
+      if (rewinding) { endRewind(); lockUntil = now + CFG.cooldown; snapTo(1); return; }
+      if (desired >= N) { exitGlide(); return; }                          // story told: glide on to the next section
+      if (now < lockUntil) return;
+      lockUntil = now + CFG.cooldown;
+      snapTo(desired + 1);
+    }
+
+    // A click or tap on the pinned section is one step, like a scroll. Not
+    // when it lands on something clickable, ends a text selection, or is the
+    // browser's own click at the end of a swipe that was already taken.
+    function onClick(e) {
+      if (!st.isActive) return;
+      var el = e.target;
+      if (el && el.closest && el.closest('a, button, input, select, textarea, label, [role="button"]')) return;
+      if (window.getSelection && String(window.getSelection())) return;
+      if (performance.now() - lastSwipeTs < 400) return;
+      advance();
+    }
+
+    // A swipe back up on the pinned section can't be handed to the browser,
+    // so the page is carried up for it: hop to the section's natural top (it
+    // looks identical), then glide up by most of a screen.
+    function upGlide() {
+      leaveUp();
+      var from = window.pageYOffset, to = Math.max(0, from - CFG.touchUpDistance * window.innerHeight);
+      snapping = true;
+      proxy.y = from;
+      gsap.to(proxy, {
+        y: to, duration: CFG.touchUpTime, ease: 'power2.out',
+        onUpdate: function () { scrollWindowTo(proxy.y); },
+        onComplete: function () { snapping = false; thaw(); ScrollTrigger.update(); }
+      });
+    }
+
+    // A touch fling can't be cancelled through its events, but a page that
+    // can't scroll stops dead: arriving (or coming back) by touch freezes the
+    // page for the moment it takes to land, then lets go once the finger is
+    // up. Scrolling from script still works while frozen.
+    function freeze() {
+      if (frozen !== null) return;
+      frozen = root.style.overflow;
+      root.style.overflow = 'hidden';
+      setTimeout(function () { thaw(true); }, 3000);                  // failsafe
+    }
+    function thaw(force) {
+      if (frozen === null || (!force && (touching || snapping))) return;
+      root.style.overflow = frozen;
+      frozen = null;
+    }
+
+    // For a swipe that can't be cancelled (one that began before the section
+    // took over, or a touch fling the freeze didn't stop): while holding,
+    // every scroll movement is put straight back on the current sentence,
+    // which inside the pin is invisible, until the page has been still for a
+    // moment (no wheel events, no movement, no finger down).
+    function hold() { holding = true; holdQuiet(); }
+    function holdQuiet() {
+      clearTimeout(holdTimer);
+      holdTimer = setTimeout(function () { if (touching) holdQuiet(); else holding = false; }, 250);
+    }
+    function unhold() { holding = false; clearTimeout(holdTimer); }
+
     // Is this wheel event the start of a new gesture, or the continuation
-    // (inertia tail) of the one before? A new gesture: after a pause, a change
-    // of direction, a line/page-mode wheel (one event per notch), a repeated
-    // identical notch-sized delta, or the deltas growing again once the
-    // previous gesture was already decaying.
-    function isNewGesture(now, mag, sign, deltaMode) {
-      var last = hist[hist.length - 1], last2 = hist[hist.length - 2], fresh;
-      risingRun = (last && mag > last.mag * 1.15) ? risingRun + 1 : 0;
-      if (!last || now - last.t > CFG.gestureGap || sign !== lastSign) { fresh = true; armed = true; }   // a pause or a turn: unmistakably new
-      else if (deltaMode !== 0) fresh = true;                                                            // line/page wheels: one event per notch
-      else if (mag >= 40 && last2 && mag === last.mag && mag === last2.mag                               // three identical notch-sized deltas,
-               && now - last.t >= 40 && last.t - last2.t >= 40) fresh = true;                            // spaced out: a mouse wheel, not momentum
-      else if (!armed) fresh = false;                                                                    // the push that brought us in: let it die down
-      else {
-        var recent = 0;
-        for (var i = Math.max(0, hist.length - 3); i < hist.length; i++) recent = Math.max(recent, hist[i].mag);
-        fresh = (now - gestureStart > 200 && mag >= 10 && mag > 1.5 * recent)      // a clear new flick during the tail
-             || (now - gestureStart > 150 && mag >= 8 && risingRun >= 3);          // or a gentle one: deltas growing again
-      }
-      if (fresh) { gestureStart = now; risingRun = 0; }
-      hist.push({ t: now, mag: mag });
+    // (inertia tail) of the one before? Judged on speed (delta per ms of
+    // event time), not raw deltas: browsers bundle trackpad events into one
+    // per frame, so raw deltas zigzag even while the page coasts smoothly, and
+    // a page too busy to take events delivers them late as one big bundle.
+    // Both used to pass for new swipes. After changing anything here, run
+    // node test/wheel-detector.test.js: it checks this function against
+    // simulated Mac trackpad and mouse input (see README, Tests).
+    //  - A change of direction is always new.
+    //  - For arriveLock after arriving, nothing else is: a big arriving swipe
+    //    may still be being pushed, and the page is busiest just then.
+    //  - After a quiet gap, it's new if the wheel was notchy (a mouse), the
+    //    stream had stopped, or what follows is much slower than before (a new
+    //    start). A held-up stream comes back at the same speed: not new.
+    //  - Line/page-mode wheels send one event per notch: each is new.
+    //  - Identical notch-sized deltas spaced out like a mouse wheel: new.
+    //  - Otherwise, a second swipe on top of a coasting one shows as a valley
+    //    then a rise: the speed had fallen well below the gesture's peak, then
+    //    climbs clearly out of that valley for a couple of events. Momentum
+    //    only ever slows, so it never looks like that.
+    function isNewGesture(t, mag, sign, deltaMode) {
+      var last = hist[hist.length - 1], last2 = hist[hist.length - 2];
+      var dt = last ? t - last.t : Infinity;
+      var v = last ? mag / Math.max(dt, 4) : 0;                                            // px per ms
+      var fresh;
+      risingRun = (last && v > lastV) ? risingRun + 1 : 0;
+      if (!last || sign !== lastSign) fresh = true;                                        // a turn
+      else if (t < detectFrom) fresh = false;                                              // just arrived
+      else if (dt > CFG.gestureGap) fresh = (lastDt > 60 && lastDt2 > 60 && lastDt3 > 60)  // a pause: a notchy wheel (every event on its own),
+                                        || lastV < 0.05 || v < lastV * 0.4;                // a stopped stream, a slow new start
+      else if (deltaMode !== 0) fresh = true;                                             // line/page wheels: one event per notch
+      else if (mag >= 40 && last2 && mag === last.mag && mag === last2.mag
+               && dt >= 40 && last.t - last2.t >= 40) fresh = true;                       // identical notches, spaced out: a mouse wheel
+      else fresh = gPeak >= 0.75 && gLow <= gPeak * 0.35                                  // a valley well below the peak...
+                && risingRun >= 2 && v >= Math.max(0.5, gLow * 2.5);                      // ...then a clear, sustained rise
+      if (fresh) { gPeak = gLow = v; risingRun = 0; }
+      else if (v > gPeak) gPeak = gLow = v;                                               // a new peak: the valley is measured from here
+      else if (v < gLow) gLow = v;
+      hist.push({ t: t, mag: mag });
       if (hist.length > 8) hist.shift();
-      lastSign = sign;
+      lastSign = sign; lastV = v; lastDt3 = lastDt2; lastDt2 = lastDt; lastDt = dt;
       return fresh;
     }
 
     function onWheel(e) {
-      if (!gesture || touching || e.ctrlKey) return;
-      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+      var why = wheel(e);
+      if (log && why) note('wheel', {
+        dy: Math.round(e.deltaY * 10) / 10, dx: Math.round(e.deltaX * 10) / 10, dm: e.deltaMode,
+        dt: Math.round(lastDt), v: Math.round(lastV * 100) / 100, peak: Math.round(gPeak * 100) / 100,
+        low: Math.round(gLow * 100) / 100, run: risingRun, fresh: wheelFresh, why: why, pd: e.defaultPrevented, c: e.cancelable, held: holding
+      });
+    }
+
+    // Stop the browser scrolling for this event. If it won't be stopped (the
+    // swipe began before we took it over), hold the page instead.
+    function take(e) {
+      e.preventDefault();
+      if (!e.cancelable && !holding) hold();
+    }
+
+    // Handles one wheel event; returns what it did (for the debug log).
+    function wheel(e) {
+      wheelFresh = null;
+      if (!gesture || e.ctrlKey) return '';
+      if (touching) return 'ignored: finger down';
+      if (!e.deltaY || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return 'ignored: sideways';   // sideways, or no movement at all (a zero delta would read as "up")
       var now = performance.now();
       var mag = Math.abs(e.deltaY), sign = e.deltaY > 0 ? 1 : -1;
-      var fresh = isNewGesture(now, mag, sign, e.deltaMode);
+      var t = (e.timeStamp > 0 && e.timeStamp < 1e12) ? e.timeStamp : now;   // when the event happened, not when we got to it
+      var fresh = wheelFresh = isNewGesture(t, mag, sign, e.deltaMode);
       lastInputTs = now;
+      if (holding) holdQuiet();                                     // a held swipe is still going
+
+      if (exiting) {                                                // the leaving glide: absorb everything until it lands...
+        if (fresh && sign < 0) { gsap.killTweensOf(proxy); exiting = snapping = false; }   // ...unless they turn back up
+        else { e.preventDefault(); return 'absorbed: leaving'; }
+      }
 
       if (!fresh) {                                                 // tail of a gesture: keep whatever we decided
-        if (!consumed) return;
-        e.preventDefault();
-        if (hurry && armed && st.isActive && sign > 0 && desired < N && !rewinding) {   // hurrying: a long push keeps stepping
+        if (!consumed) return 'tail: native';
+        take(e);
+        if (hurry >= 2 && st.isActive && sign > 0 && desired < N && !rewinding) {   // fast-forwarding: a long push keeps stepping
           tailAccum += mag;
-          if (tailAccum >= CFG.hurryDelta) { tailAccum = 0; snapTo(desired + 1); }
+          if (tailAccum >= CFG.hurryDelta) { tailAccum = 0; snapTo(desired + 1); return 'tail: step'; }
         }
-        return;
+        return 'tail: absorbed';
       }
 
       consumed = false; tailAccum = 0;
-      if (!st.isActive) return;                                     // not on the section: native scrolling
+      if (!st.isActive) return 'new: native';                       // not on the section: native scrolling
       var k = desired;
-      if (sign < 0) { if (k === N) rewind(); leaveUp(); return; }   // up, in any state: the page moves (the finished text greys out)
+      if (sign < 0) { if (k === N) rewind(); leaveUp(); return 'new: up'; }   // up, in any state: the page moves (the finished text greys out)
       if (rewinding) {                                              // turning back down mid grey-out: the story starts over
-        if (now < lockUntil) return;
-        endRewind(); consumed = true; e.preventDefault();
+        if (now < lockUntil) return 'new: cooldown';
+        endRewind(); consumed = true; take(e);
         lockUntil = now + CFG.cooldown;
         snapTo(1);
-        return;
+        return 'new: restart';
       }
-      if (k >= N) return;                                           // story told: let the page move on
+      if (k >= N) {                                                 // story told: this swipe leaves, at a steady pace,
+        consumed = true;                                            // and its momentum is swallowed
+        e.preventDefault();
+        exitGlide();
+        return 'new: exit';
+      }
       consumed = true;
-      e.preventDefault();
-      if (now < lockUntil) return;
+      take(e);
+      if (now < lockUntil) return 'new: cooldown';
       lockUntil = now + CFG.cooldown;
       snapTo(k + 1);
+      return 'new: step';
     }
 
     function onKey(e) {
@@ -930,10 +1207,13 @@
     if (gesture) {
       window.addEventListener('wheel', onWheel, { passive: false });
       window.addEventListener('keydown', onKey);
-      // Touch is never intercepted: on phones both versions behave like version B.
-      window.addEventListener('touchstart', function () { touching = true; }, { passive: true });
-      window.addEventListener('touchend',   function () { touching = false; }, { passive: true });
-      window.addEventListener('touchcancel', function () { touching = false; }, { passive: true });
+      // Touch: the only non-passive listener is on the section itself, so the
+      // rest of the page keeps fully native scrolling.
+      window.addEventListener('touchstart', onTouchStart, { passive: true });
+      window.addEventListener('touchend', onTouchEnd, { passive: true });
+      window.addEventListener('touchcancel', onTouchEnd, { passive: true });
+      block.addEventListener('touchmove', onTouchMove, { passive: false });
+      block.addEventListener('click', onClick);
     }
 
     // Handy in the console / for the preview page.
