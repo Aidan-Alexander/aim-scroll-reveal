@@ -23,6 +23,18 @@ The text is the two `<p class="vs-reveal__p">` paragraphs near the top of the fi
 - `<strong>…</strong>` is the burgundy emphasis. It can start, end or sit inside a sentence.
 - Any number of sentences per paragraph. More than two paragraphs also works: each new paragraph dims the one before it.
 - To control the split by hand (a sentence you want typed in two beats, or a line with no full stop), wrap each piece of that paragraph in `<span class="vs-s">…</span>`. Once a paragraph uses `vs-s`, it is split only on those spans, so wrap every part.
+- To keep two sentences together as one step, wrap them in `<span class="vs-join">…</span>` (as "Choose the promotion. Choose the nagging feeling…" is). The full stop inside still gets its little pause.
+- Sentences of 3 words or fewer (`noPauseWords`) type in one run, with no pause between words, so "Or choose impact." lands as one beat.
+- The wordmark ("Start something that matters") is the `<div class="vs-reveal__mark">` after the paragraphs: an inline SVG whose letters are `<path>`s. It is the final step, after the last sentence: its words fade in one at a time on an even beat (`markWordTime`, `markWordGap`), and paragraph 2 stays exactly as it is. To swap the artwork, replace the `<svg>` and the `aria-label`, and wrap each word's `<path>`s in a `<g data-vs-word="…">` as the current one does (without the groups the script guesses words from the gaps between letters, which goes wrong on italic faces whose letters overlap). Colour, width and the space above it are `--vs-mark-color`, `--vs-mark-width` and `--vs-mark-gap`. Delete the div to have no wordmark.
+
+A blinking caret sits after the last typed letter (steady while typing, blinking while it waits for the next scroll, gone once the wordmark takes over, and at the start of the empty section before anything is typed). `caret: false` removes it; `--vs-caret-color` recolours it (default: the text colour).
+
+## Impatient and returning visitors
+
+- **Hurrying.** A scroll gesture that lands while a sentence is still typing, or within `hurryWindow` (0.7s) of the previous gesture, finishes the current sentence at once and plays the next one faster: 2.5×, then 6×, then instantly (`hurryPace`). Pausing for a moment resets it to normal. Two or three quick flicks get to the end; the next one lets the page go.
+- **Jumping.** If the scroll position jumps several sentences at once (scrollbar drag, End key, landing mid-section from the back button), the catch-up plays at `catchUpPace` (4×).
+- **Scrolling back up, in any state.** The page always moves: on an up-gesture the scroll position hops to the section's natural top (visually identical, it is pinned there) and the flick carries on natively, so nothing holds you, not even the blinking caret. Whatever had been typed is left behind in grey (`--vs-spent`, over `spentTime`), then vanishes back to front (`vanishTime`) as the section leaves, and the section resets, so scrolling down again replays it from blank. Turning back down before you've left starts the story again.
+- **Arriving.** Scrolling down to the section lands on the empty section with the caret blinking; the next gesture types the first sentence.
 
 ## Tuning
 
@@ -31,8 +43,8 @@ Colours and type are CSS variables at the top of the `<style>` (`--vs-color`, `-
 - `mode`: `'gesture'` (A) or `'scroll'` (B).
 - `stepDistance`: screen-heights of scrolling per sentence in version B (0.5).
 - `hold` / `holdGesture`: how long the finished text stays before the page moves on.
-- `charStagger`, `charPause`, `maxStepTime`: the typing speed. Letters land `charStagger` apart inside a burst; bursts are broken by pauses around `charPause` long (random, longer after punctuation); `maxStepTime` caps a whole sentence, squeezing long ones.
-- `charJitter` / `wordJitter`: how stop-start the rhythm is. 0 is metronomic with no pauses; letter mode defaults to 0.6 (pauses mostly at word boundaries and after punctuation, now and then mid-word); 1 is very jerky. Word mode defaults to 0.
+- `charStagger`, `charPause`, `maxStepTime`: the typing speed. The letters of a word land `charStagger` apart; every word boundary adds a pause around `charPause` long (random 0.6×–1.6×, longer after punctuation); `maxStepTime` caps a whole sentence, squeezing long ones proportionally.
+- `charJitter` / `wordJitter`: how uneven the letters (or words) are. 0 is metronomic with no word pauses; letter mode defaults to 0.5; 1 is very uneven. Word mode defaults to 0.
 - `wordTime`, `wordStagger`: the same for word mode.
 - `dimOpacity`, `dimScale`: how far the earlier paragraph recedes.
 
