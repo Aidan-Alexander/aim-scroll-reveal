@@ -10,7 +10,7 @@
 /* MOCK ONLY. A stand-in page around the section so it can be scrolled into and out of.
    Nothing in this file goes to Squarespace; the section itself is loaded unchanged from
    ../squarespace/ so what you see here is exactly the file you would paste. With no
-   options in the URL you see the file's own defaults; the panel's toggles override them. */
+   options in the URL you see the file's own defaults; the panel's links override them. */
 body { margin: 0; background: #fff; color: #0B0F0E; font-family: 'Alan Sans', system-ui, sans-serif; }
 /* the site's !important paragraph font rule, so the section's own override is exercised */
 p { font-family: 'Alan Sans', system-ui, sans-serif !important; }
@@ -36,8 +36,6 @@ h1 { font-size: clamp(2rem, 5vw, 4rem); max-width: 14ch; }
 .hud a { color: #fff; text-decoration: none; display: block; padding: 5px 8px; border-radius: 6px; }
 .hud a:hover { background: rgba(255,255,255,.12); }
 .hud a.on, .hud a.on:hover { background: #8B0A2F; }
-.hud .row { display: flex; gap: 4px; margin-top: 6px; }
-.hud .row a { flex: 1; text-align: center; border: 1px solid rgba(255,255,255,.2); }
 .hud .status { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.15); font-variant-numeric: tabular-nums; }
 .hud .steps { display: flex; gap: 3px; margin-top: 6px; }
 .hud .steps i { flex: 1; height: 4px; background: rgba(255,255,255,.2); border-radius: 2px; transition: background .2s; }
@@ -50,11 +48,9 @@ h1 { font-size: clamp(2rem, 5vw, 4rem); max-width: 14ch; }
 
 <div class="hud" id="hud">
   <div class="title">Scroll reveal · preview</div>
-  <a href="?" data-v="2" data-mode="gesture">A · gesture: one flick, one sentence</a>
-  <a href="?" data-v="2" data-mode="scroll">B · scroll: sentences as you pass</a>
+  <a href="?v=2&amp;mode=gesture" data-v="2" data-mode="gesture">A · gesture: one flick, one sentence</a>
+  <a href="?v=2&amp;mode=scroll" data-v="2" data-mode="scroll">B · scroll: sentences as you pass</a>
   <a href="?v=1" data-v="1">v1 · original word scrub</a>
-  <div class="row" id="typing"><a href="?" data-typing="chars">by letter</a><a href="?" data-typing="words">by word</a></div>
-  <div class="row" id="muted"><a href="?" data-muted="none">invisible until typed</a><a href="?" data-muted="grey">grey until typed</a></div>
   <div class="status" id="status">loading…</div>
   <div class="steps" id="steps"></div>
 </div>
@@ -76,11 +72,11 @@ h1 { font-size: clamp(2rem, 5vw, 4rem); max-width: 14ch; }
 <section class="wrap filler">
   <h2>The section below the story</h2>
   <p>More filler, so the page has somewhere to go once the story is told. Scroll back up into the section
-    to see it run in reverse.</p>
+    to see the finished text grey out and clear.</p>
   <p>Version A holds the page on the section: every scroll gesture types the next sentence, keyboard
-    arrows and space work too, and once the last sentence is typed the next gesture lets the page move on.
-    Version B never holds the page: it types each sentence as you scroll past its place, so a hard flick
-    types two or three in quick succession and a small one types none.</p>
+    arrows and space work too, and once the story is told the next gesture lets the page move on.
+    Scrolling up is never held. Version B never holds the page: it types each sentence as you scroll
+    past its place, so a hard flick types two or three in quick succession and a small one types none.</p>
   <p>On phones both behave like version B (touch scrolling is never intercepted).</p>
 </section>
 
@@ -91,17 +87,8 @@ h1 { font-size: clamp(2rem, 5vw, 4rem); max-width: 14ch; }
 
   // Only what is in the URL overrides the file; everything else is the file's own default.
   var cfg = {};
-  if (q.get('mode'))   cfg.mode   = q.get('mode');
-  if (q.get('typing')) cfg.typing = q.get('typing');
+  if (q.get('mode')) cfg.mode = q.get('mode');
   window.VS_REVEAL_CONFIG = cfg;
-
-  // "grey / invisible until typed" is the section's --vs-muted variable. The override
-  // has to be appended AFTER the section's own <style> and outrank it, or the file wins.
-  var mutedParam = q.get('muted'), ghost = null;
-  if (v === '2' && (mutedParam === 'grey' || mutedParam === 'none')) {
-    ghost = document.createElement('style');
-    ghost.textContent = '#mount .vs-reveal { --vs-muted: ' + (mutedParam === 'grey' ? '#C6C2BC' : 'transparent') + '; }';
-  }
 
   var status = document.getElementById('status'), bar = document.getElementById('steps'), label = '';
   function render(step, shown, of) {
@@ -115,32 +102,19 @@ h1 { font-size: clamp(2rem, 5vw, 4rem); max-width: 14ch; }
   }
   document.addEventListener('vs-reveal:step', function (e) { render(e.detail.step, e.detail.shown, e.detail.of); });
 
-  // Once the section is running, read back what it actually does (URL or file default)
-  // and build the panel's links so each toggle changes one thing and keeps the rest.
-  function hud(mode, typing, muted) {
-    function link(m, t, g) { return '?v=2&mode=' + m + '&typing=' + t + '&muted=' + g; }
+  // Once the section is running, read back which mode it is actually in (URL or file
+  // default) and highlight it in the panel.
+  function hud(mode) {
     document.querySelectorAll('#hud a[data-v]').forEach(function (a) {
       a.classList.toggle('on', a.dataset.v === v && (v === '1' || a.dataset.mode === mode));
-      if (a.dataset.v === '2') a.href = link(a.dataset.mode, typing, muted);
     });
-    document.querySelectorAll('#typing a').forEach(function (a) {
-      a.classList.toggle('on', v === '2' && a.dataset.typing === typing);
-      a.href = link(mode, a.dataset.typing, muted);
-    });
-    document.querySelectorAll('#muted a').forEach(function (a) {
-      a.classList.toggle('on', v === '2' && a.dataset.muted === muted);
-      a.href = link(mode, typing, a.dataset.muted);
-    });
-    label = v === '1' ? 'v1 · scrubbed to scroll'
-          : (mode === 'gesture' ? 'A · gesture' : 'B · scroll') + ' · ' + (typing === 'chars' ? 'letters' : 'words')
-            + ' · ' + (muted === 'none' ? 'invisible' : 'grey');
+    label = v === '1' ? 'v1 · scrubbed to scroll' : (mode === 'gesture' ? 'A · gesture' : 'B · scroll');
   }
   function whenReady(tries) {
+    if (v === '1') { hud(''); status.textContent = label; return; }
     var r = window.__vsReveal && window.__vsReveal[0];
-    if (v === '1') { hud('gesture', 'chars', 'none'); status.textContent = 'v1 · scrubbed to scroll'; return; }
     if (!r) { if (tries < 100) setTimeout(function () { whenReady(tries + 1); }, 100); return; }
-    var m = getComputedStyle(r.block).getPropertyValue('--vs-muted').trim();
-    hud(r.config.mode, r.config.typing, m === 'transparent' ? 'none' : 'grey');
+    hud(r.config.mode);
     render(r.step(), r.step(), r.steps);
   }
 
@@ -156,7 +130,6 @@ h1 { font-size: clamp(2rem, 5vw, 4rem); max-width: 14ch; }
       else if (n.nodeName === 'STYLE') document.head.appendChild(document.importNode(n, true));
       else if (n.nodeType === 1) mount.appendChild(document.importNode(n, true));
     });
-    if (ghost) document.head.appendChild(ghost);   // after the section's style, before its script reads the colour
     scripts.forEach(function (code) {
       var s = document.createElement('script');
       s.textContent = code;

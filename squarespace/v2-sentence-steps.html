@@ -10,11 +10,13 @@
   is fine), commit, then paste the WHOLE file into the page's Code Block.
   Edits made only inside Squarespace are lost the next time someone pastes.
 
-  Two versions to try, switched by `mode` in CONFIG below:
-    'gesture'  version A: every scroll gesture types one sentence; the page
-               waits on the section until the story is told
+  Two behaviours, switched by `mode` in CONFIG below:
+    'gesture'  version A (in use): every scroll gesture types one sentence;
+               the page waits on the section until the story is told
     'scroll'   version B: sentences type as you scroll past them; nothing
                is ever held
+  Options tried and dropped (typing word by word, grey text before it is
+  typed) are in the repo's history at tag v2-with-variants.
   Previous version (word-by-word scrub): squarespace/v1-word-scrub.html
   ================================================================
 -->
@@ -37,7 +39,7 @@
     <p class="vs-reveal__p">Or choose <strong>impact</strong>. Choose to <strong>follow the evidence</strong>, wherever it leads. Choose red-eye flights and ungodly heat. Choose saving the <strong>lives of thousands of people</strong> you&rsquo;ll never meet. Choose more <strong>meaning</strong> than you know what to do with..</p>
 
     <!-- THE WORDMARK. Appears last, word by word, after the paragraphs; paragraph 2 stays as it is.
-         Any inline SVG works: its <path>s are grouped into words by the gaps between them. -->
+         Any inline SVG works: wrap each word's <path>s in a <g data-vs-word="..."> as below. -->
     <div class="vs-reveal__mark" role="img" aria-label="Start something that matters">
       <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000.83 54.53">
         <g data-vs-word="START">
@@ -89,7 +91,6 @@
   /* ---- TUNE THESE ---- */
   --vs-color:      #0B0F0E;   /* typed words */
   --vs-bold-color: #8B0A2F;   /* typed words inside <strong> */
-  --vs-muted:      transparent;   /* words not typed yet: invisible. A colour (e.g. #C6C2BC) shows them as grey ghost text instead */
   --vs-start-scale: 0.85;     /* size of a paragraph whose turn hasn't come (it grows to full size when it does) */
   --vs-mark-color: #97002d;   /* the wordmark that appears last */
   --vs-mark-width: 100%;      /* its width within the text column (e.g. 900px) */
@@ -158,12 +159,12 @@
   color: var(--vs-bold-color) !important;
 }
 
-/* Every word (or letter, in 'chars' mode) is a .vs-u span. It starts in
-   the muted colour; the script tweens its --vs-w to the real colour when
-   its sentence is typed. Spans stay display:inline, so line-breaking is
-   untouched. !important so no site rule can recolour them.            */
+/* Every letter is a .vs-u span. It starts transparent (laid out, so nothing
+   reflows as it types, but invisible); the script tweens its --vs-w to the
+   real colour when its sentence is typed. Spans stay display:inline, so
+   line-breaking is untouched. !important so no site rule can recolour them. */
 .vs-reveal .vs-u {
-  color: var(--vs-w, var(--vs-muted)) !important;
+  color: var(--vs-w, transparent) !important;
 }
 
 /* The caret: blinks at the end of what has been typed, steady while typing,
@@ -188,10 +189,10 @@
 .vs-reveal__mark path { fill: var(--vs-mark-color); }
 
 /* Until the script has set things up, everything is already in its resting
-   state (text muted, later paragraphs small, wordmark hidden), so nothing
-   flashes first. */
+   state (text invisible, later paragraphs small, wordmark hidden), so
+   nothing flashes first. */
 .vs-reveal:not(.is-ready) .vs-reveal__p,
-.vs-reveal:not(.is-ready) .vs-reveal__p strong { color: var(--vs-muted) !important; }
+.vs-reveal:not(.is-ready) .vs-reveal__p strong { color: transparent !important; }
 .vs-reveal:not(.is-ready) .vs-reveal__p + .vs-reveal__p { transform: scale(var(--vs-start-scale)); }
 .vs-reveal:not(.is-ready) .vs-reveal__mark path { opacity: 0; }
 
@@ -241,7 +242,6 @@
   var CFG = {
     mode:         'gesture',  // 'gesture' = version A: each scroll gesture types one sentence, the page waits
                               // 'scroll'  = version B: sentences type as you scroll past them, nothing is held
-    typing:       'chars',    // 'chars' (letters, in bursts) or 'words' (whole words on an even beat)
     caret:        true,       // a blinking cursor at the end of the typed text (steady while typing, gone for the wordmark)
 
     // Scroll geometry, in screen-heights
@@ -251,15 +251,12 @@
     holdGesture:  0.3,        // version A: same, but the page only moves when you gesture anyway
 
     // Typing feel, in seconds
-    wordTime:     0.05,       // one word's switch from muted to full: near-instant, like a keystroke
-    wordStagger:  0.12,       // gap between one word appearing and the next
-    charTime:     0.03,       // same two, for 'chars': the letters of a word land this far apart...
-    charStagger:  0.03,
+    charTime:     0.03,       // one letter's switch from invisible to full: near-instant, like a keystroke
+    charStagger:  0.03,       // the letters of a word land this far apart...
     charPause:    0.07,       // ...and every word boundary adds a pause about this long (random 0.6x-1.6x)
     commaPause:   1.8,        // that pause, times this, after , ; :
-    stopPause:    5,          // and times this after . ! ? inside a joined step ("Choose the promotion. Choose...")
+    stopPause:    5,          // and times this after . ! ? in the middle of a step (two sentences kept together by vs-join or vs-s)
     charJitter:   0.5,        // how uneven the letters are: 0 = metronomic and no word pauses; 1 = very uneven
-    wordJitter:   0,          // same idea for 'words'; 0 keeps the even rhythm
     noPauseWords: 3,          // sentences this short (in words) come out in one run, no word pauses ("Or choose impact.")
     maxStepTime:  2.0,        // long sentences speed up so none takes longer than this
 
@@ -313,10 +310,10 @@
 
   // ---------- text -> words -> sentences ----------
 
-  // Wrap every word of a paragraph in a span, leaving <strong>, whitespace
-  // and line-breaking untouched. In 'chars' mode each letter gets its own
-  // span inside the word span. Returns [{ el, text, manual }] in reading
-  // order; `manual` is the enclosing <span class="vs-s">, if any.
+  // Wrap every word of a paragraph in a span, and every letter in a span
+  // inside that, leaving <strong>, whitespace and line-breaking untouched.
+  // Returns [{ el, text, manual, join }] in reading order; `manual` and
+  // `join` are the enclosing <span class="vs-s"> / <span class="vs-join">, if any.
   function collectWords(p) {
     var nodes = [], words = [];
     var walker = document.createTreeWalker(p, NodeFilter.SHOW_TEXT, null);
@@ -336,17 +333,12 @@
         if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(part)); return; }
         var word = document.createElement('span');
         word.className = 'vs-word';
-        if (CFG.typing === 'chars') {
-          Array.from(part).forEach(function (ch) {
-            var c = document.createElement('span');
-            c.className = 'vs-u';
-            c.textContent = ch;
-            word.appendChild(c);
-          });
-        } else {
-          word.className += ' vs-u';
-          word.textContent = part;
-        }
+        Array.from(part).forEach(function (ch) {
+          var c = document.createElement('span');
+          c.className = 'vs-u';
+          c.textContent = ch;
+          word.appendChild(c);
+        });
         frag.appendChild(word);
         words.push({ el: word, text: part, manual: manual, join: join });
       });
@@ -453,7 +445,6 @@
     adoptFonts(block);
     var inner = block.querySelector('.vs-reveal__inner') || block;
 
-    var chars = CFG.typing === 'chars';
     var PUNCT = /[,;:.!?…]/;
 
     // The wordmark's <path>s grouped into words. Preferred: the SVG says so,
@@ -507,10 +498,10 @@
       splitSentences(collectWords(el)).forEach(function (group, gi) {
         var units = [], breaks = [], punct = [];
         group.forEach(function (w) {
-          var ws = chars ? Array.prototype.slice.call(w.el.querySelectorAll('.vs-u')) : [w.el];
+          var ws = Array.prototype.slice.call(w.el.querySelectorAll('.vs-u'));
           ws.forEach(function (u, j) {
             var prev = units[units.length - 1], pt = prev ? prev.textContent : '';
-            breaks.push(chars && j === 0 && !!prev);
+            breaks.push(j === 0 && !!prev);
             punct.push(!prev ? 0 : /[.!?…]$/.test(pt) ? CFG.stopPause : PUNCT.test(pt) ? CFG.commaPause : 0);
             units.push(u);
           });
@@ -529,10 +520,9 @@
     var cs = getComputedStyle(block);
     var colText  = cs.getPropertyValue('--vs-color').trim() || '#000';
     var colBold  = cs.getPropertyValue('--vs-bold-color').trim() || colText;
-    var colMuted = cs.getPropertyValue('--vs-muted').trim() || 'transparent';
     var colSpent = cs.getPropertyValue('--vs-spent').trim() || '#C6C2BC';
     textUnits.forEach(function (u, i) { u.__vsIdx = i; u.__vsTarget = u.closest('strong, b') ? colBold : colText; });
-    if (textUnits.length) gsap.set(textUnits, { '--vs-w': colMuted });
+    if (textUnits.length) gsap.set(textUnits, { '--vs-w': 'transparent' });
     if (markPaths.length) gsap.set(markPaths, { opacity: 0 });
 
     // Later paragraphs wait at the small size until their turn; then the CSS
@@ -594,15 +584,12 @@
       } catch (e) {}
     }
 
-    // One paused timeline per step: type the sentence (reversing it untypes
-    // it, last word first) and, for a paragraph's first sentence, dim the
-    // paragraph before.
-    // When each unit (letter or word) switches on, relative to the start of
-    // its sentence. Even spacing by default. With jitter > 0 the letters land
-    // slightly unevenly and every word boundary adds a pause (the space, then
-    // a breath; longer after punctuation), so words arrive as little runs;
-    // very short sentences skip the pauses. Then, if the sentence would run
-    // past maxStepTime, everything is squeezed to fit.
+    // When each letter switches on, relative to the start of its sentence.
+    // With jitter > 0 the letters land slightly unevenly and every word
+    // boundary adds a pause (the space, then a breath; longer after
+    // punctuation), so words arrive as little runs; very short sentences skip
+    // the pauses. Then, if the sentence would run past maxStepTime,
+    // everything is squeezed to fit.
     function startTimes(step, base, dur, jitter) {
       var t = 0, times = [0], n = step.units.length;
       for (var i = 1; i < n; i++) {
@@ -621,6 +608,9 @@
       return times;
     }
 
+    // One paused timeline per step: type the sentence (reversing it untypes
+    // it, last letter first) and, for a paragraph's first sentence, dim the
+    // paragraph before.
     var tls = [null];
     steps.forEach(function (step, i) {
       var k = i + 1;
@@ -646,12 +636,10 @@
           }
         });
       } else {
-        var dur = chars ? CFG.charTime : CFG.wordTime;
-        var times = startTimes(step, chars ? CFG.charStagger : CFG.wordStagger, dur,
-                               chars ? CFG.charJitter : CFG.wordJitter);
+        var times = startTimes(step, CFG.charStagger, CFG.charTime, CFG.charJitter);
         step.units.forEach(function (u, j) {
           tl.to(u, {
-            '--vs-w': u.__vsTarget, duration: dur, ease: 'none',
+            '--vs-w': u.__vsTarget, duration: CFG.charTime, ease: 'none',
             onStart:           function () { placeCaret(u); },
             onReverseComplete: function () { placeCaret(u.__vsIdx > 0 ? textUnits[u.__vsIdx - 1] : null); }
           }, times[j]);
@@ -825,7 +813,7 @@
     function resetToBlank() {
       rewindSeq = null;
       for (var i = 1; i <= N; i++) tls[i].pause(0);
-      gsap.set(textUnits, { '--vs-w': colMuted });
+      gsap.set(textUnits, { '--vs-w': 'transparent' });
       if (markPaths.length) gsap.set(markPaths, { opacity: 0, clearProps: 'fill' });
       gsap.set(paras, { opacity: 1, scale: 1 });
       if (paras.length > 1) gsap.set(paras.slice(1), { scale: startScale });
@@ -972,7 +960,7 @@
       ? Promise.resolve()
       : load(GSAP_URL).then(function () { return load(ST_URL); });
     chain.then(init).catch(function (e) {
-      // If the CDN is blocked, show the text rather than a muted screen.
+      // If the CDN is blocked, show the text rather than a blank screen.
       document.querySelectorAll('.vs-reveal').forEach(function (el) { el.classList.add('is-ready', 'is-static'); });
       console.error('[vs-reveal]', e);
     });
