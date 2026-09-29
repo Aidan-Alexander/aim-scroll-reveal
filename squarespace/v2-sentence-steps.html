@@ -315,6 +315,7 @@
   for (var key in override) {
     if (Object.prototype.hasOwnProperty.call(override, key)) CFG[key] = override[key];
   }
+  if (/[?&]vsdebug(=|&|$)/.test(location.search)) CFG.debug = true;   // add ?vsdebug to the page address to record a log (see README)
   /* ================================ */
 
   var GSAP_URL = 'https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js';
@@ -641,14 +642,55 @@
     var frozen = null;        // while a touch fling is being stopped: the page's own overflow value, to put back
     var holding = false, holdTimer = null;   // backstop for a fling the freeze didn't stop: keep the page on the sentence
 
-    // Debug recorder (CFG.debug): every wheel decision and every step, in window.__vsLog.
+    // Debug recorder (CFG.debug, or ?vsdebug in the page address): every
+    // wheel/touch decision and every step, in window.__vsLog, with a button
+    // to copy it as text. Flags: S snapping, H holding, F frozen, X leaving,
+    // R greying out, T finger down, L touch-locked, A typing.
     var log = CFG.debug ? (window.__vsLog = []) : null, wheelFresh = null;
+    function flags() {
+      return (snapping ? 'S' : '') + (holding ? 'H' : '') + (frozen !== null ? 'F' : '') + (exiting ? 'X' : '') +
+             (rewinding ? 'R' : '') + (touching ? 'T' : '') + (block.classList.contains('is-touchlocked') ? 'L' : '') + (active ? 'A' : '');
+    }
     function note(kind, o) {
       if (!log) return;
-      var r = { k: kind, t: Math.round(performance.now()), y: Math.round(window.pageYOffset), want: desired, shown: shown, pinned: !!(st && st.isActive) };
+      var r = { k: kind, t: Math.round(performance.now()), y: Math.round(window.pageYOffset), want: desired, shown: shown,
+                pinned: !!(st && st.isActive), f: flags() };
       if (o) for (var key in o) r[key] = o[key];
       log.push(r);
       if (log.length > 6000) log.splice(0, 2000);
+    }
+    if (log) {
+      window.__vsLogText = function () {
+        var t0 = log.length ? log[0].t : 0, base = { k: 1, t: 1, y: 1, want: 1, shown: 1, pinned: 1, f: 1 };
+        return log.map(function (r) {
+          var head = ('+' + (r.t - t0)).padStart(7) + '  y' + String(r.y).padStart(6) + '  step ' + r.want + '/' + r.shown +
+                     (r.pinned ? ' pinned ' : '        ') + (r.f || '-').padEnd(8) + ' ' + r.k;
+          if (r.k !== 'wheel') {
+            return head + Object.keys(r).filter(function (k) { return !base[k]; }).map(function (k) { return ' ' + k + '=' + r[k]; }).join('');
+          }
+          return head + '  dy=' + r.dy + (r.dx ? ' dx=' + r.dx : '') + (r.dm ? ' mode=' + r.dm : '') + '  dt=' + r.dt + ' v=' + r.v +
+                 ' peak=' + r.peak + ' low=' + r.low + ' run=' + r.run + '  ' + (r.fresh ? 'NEW ' : '    ') + r.why +
+                 (r.pd ? '' : r.c === false && /absorbed|step|restart|cooldown/.test(r.why) ? '  [uncancellable: held]' : '  [scrolls]');
+        }).join('\n');
+      };
+      var copyBtn = document.createElement('button');
+      copyBtn.type = 'button';
+      copyBtn.textContent = 'copy scroll log';
+      copyBtn.setAttribute('style', 'position:fixed;left:8px;bottom:8px;z-index:2147483647;font:12px/1 system-ui,sans-serif;' +
+        'padding:9px 11px;border:0;border-radius:8px;background:#0B0F0E;color:#fff;opacity:.85;touch-action:manipulation');
+      copyBtn.addEventListener('click', function () {
+        var text = window.__vsLogText(), n = log.length;
+        function shown() { copyBtn.textContent = 'copied ' + n + ' events'; }
+        function fallback() {                                         // no clipboard: show it to select by hand
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          ta.setAttribute('style', 'position:fixed;inset:10% 5%;z-index:2147483647;width:90%;height:80%;font:10px monospace');
+          document.body.appendChild(ta); ta.focus(); ta.select();
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(shown, fallback);
+        else fallback();
+      });
+      document.body.appendChild(copyBtn);
     }
 
     function announce() {
@@ -885,6 +927,7 @@
     // back to front, so the next scroll down starts from blank.
     function rewind() {
       if (rewinding) return;
+      note('rewind');
       rewinding = true; parked = false; consumed = false; hurry = 0; pace = 1;
       gsap.killTweensOf(proxy); snapping = exiting = false; unhold();
       if (active) {                                                 // settle the sentence in flight
@@ -935,6 +978,7 @@
       gsap.killTweensOf(proxy); snapping = exiting = false; unhold();
       hurry = 0; pace = 1;
       parked = !rewinding && (shown > 0 || !!active);              // mid-story: keep the place for when you come back
+      note('leave-up', { parked: parked });
       scrollWindowTo(st.start - 1);
     }
 
@@ -944,6 +988,7 @@
     // The rest of the pin looks identical (the section is pinned there), so
     // the glide starts from its end and the section moves at once.
     function exitGlide() {
+      note('exit-glide');
       exiting = snapping = true;
       gsap.killTweensOf(proxy); unhold();
       var scroller = document.scrollingElement || document.documentElement;
@@ -968,10 +1013,16 @@
     function onTouchStart(e) {
       lastTouchTs = performance.now();
       touching = true;
+      // Self-repair: a new touch means any arriving fling is over. If the page
+      // is still frozen, or the section is touch-locked without being pinned,
+      // every swipe would do nothing (no native scroll, and not ours), so undo it.
+      if (frozen !== null && !snapping) { note('repair: thawed'); thaw(true); }
+      if (block.classList.contains('is-touchlocked') && !st.isActive) { note('repair: unlocked'); lockTouch(false); }
       var t = e.touches && e.touches.length === 1 ? e.touches[0] : null;
       tOurs = !!t && st.isActive && block.classList.contains('is-touchlocked');
       tUsed = false;
       if (t) { tX = t.clientX; tY = t.clientY; }
+      note('touchstart', { ours: tOurs, fingers: e.touches ? e.touches.length : 0, overflow: root.style.overflow || '-' });
     }
     function onTouchMove(e) {
       lastTouchTs = performance.now();
@@ -981,12 +1032,14 @@
       var dy = tY - e.touches[0].clientY, dx = tX - e.touches[0].clientX;
       if (Math.abs(dy) < CFG.touchStep || Math.abs(dy) < Math.abs(dx)) return;
       tUsed = true;
+      note('swipe', { dir: dy > 0 ? 'forward' : 'back', dy: Math.round(dy) });
       try { swipe(dy > 0 ? 1 : -1); }
       catch (err) { lockTouch(false); tOurs = false; console.error('[vs-reveal]', err); }   // never leave the page unscrollable
     }
     function onTouchEnd(e) {
       lastTouchTs = performance.now();
       touching = !!(e.touches && e.touches.length);
+      note(e.type, { fingersLeft: e.touches ? e.touches.length : 0 });
       if (!touching) { tOurs = false; thaw(); }
     }
 
@@ -1001,10 +1054,10 @@
     // once the story is told, on to the next section.
     function advance() {
       var now = performance.now();
-      if (exiting) return;
-      if (rewinding) { endRewind(); lockUntil = now + CFG.cooldown; snapTo(1); return; }
-      if (desired >= N) { exitGlide(); return; }                          // story told: glide on to the next section
-      if (now < lockUntil) return;
+      if (exiting) { note('advance: ignored, leaving'); return; }
+      if (rewinding) { note('advance: restart'); endRewind(); lockUntil = now + CFG.cooldown; snapTo(1); return; }
+      if (desired >= N) { note('advance: exit'); exitGlide(); return; }   // story told: glide on to the next section
+      if (now < lockUntil) { note('advance: ignored, cooldown'); return; }
       lockUntil = now + CFG.cooldown;
       snapTo(desired + 1);
     }
@@ -1027,6 +1080,7 @@
     function upGlide() {
       leaveUp();
       var from = window.pageYOffset, to = Math.max(0, from - CFG.touchUpDistance * window.innerHeight);
+      note('up-glide', { from: Math.round(from), to: Math.round(to) });
       snapping = true;
       proxy.y = from;
       gsap.to(proxy, {
@@ -1044,12 +1098,14 @@
       if (frozen !== null) return;
       frozen = root.style.overflow;
       root.style.overflow = 'hidden';
+      note('freeze', { was: frozen || '-' });
       setTimeout(function () { thaw(true); }, 3000);                  // failsafe
     }
     function thaw(force) {
       if (frozen === null || (!force && (touching || snapping))) return;
       root.style.overflow = frozen;
       frozen = null;
+      note(force ? 'thaw (failsafe)' : 'thaw');
     }
 
     // For a swipe that can't be cancelled (one that began before the section
@@ -1057,12 +1113,12 @@
     // every scroll movement is put straight back on the current sentence,
     // which inside the pin is invisible, until the page has been still for a
     // moment (no wheel events, no movement, no finger down).
-    function hold() { holding = true; holdQuiet(); }
+    function hold() { if (!holding) note('hold'); holding = true; holdQuiet(); }
     function holdQuiet() {
       clearTimeout(holdTimer);
-      holdTimer = setTimeout(function () { if (touching) holdQuiet(); else holding = false; }, 250);
+      holdTimer = setTimeout(function () { if (touching) holdQuiet(); else { holding = false; note('hold released'); } }, 250);
     }
-    function unhold() { holding = false; clearTimeout(holdTimer); }
+    function unhold() { if (holding) note('unhold'); holding = false; clearTimeout(holdTimer); }
 
     // Is this wheel event the start of a new gesture, or the continuation
     // (inertia tail) of the one before? Judged on speed (delta per ms of

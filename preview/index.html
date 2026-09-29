@@ -53,7 +53,6 @@ h1 { font-size: clamp(2rem, 5vw, 4rem); max-width: 14ch; }
   <a href="?v=1" data-v="1">v1 · original word scrub</a>
   <div class="status" id="status">loading…</div>
   <div class="steps" id="steps"></div>
-  <div class="row" id="dbg" hidden><a href="#" id="copylog">copy debug log</a><a href="#" id="clearlog">clear</a></div>
 </div>
 
 <header class="wrap nav"><span>Ambitious Impact</span><span class="mock">mock page around the section</span></header>
@@ -93,36 +92,7 @@ h1 { font-size: clamp(2rem, 5vw, 4rem); max-width: 14ch; }
   if (q.get('debug')) cfg.debug = true;
   window.VS_REVEAL_CONFIG = cfg;
 
-  // ?debug=1: the section records every scroll decision in window.__vsLog; this
-  // turns it into one readable line per event, and the panel can copy it.
-  window.__vsLogText = function () {
-    var L = window.__vsLog || [], t0 = L.length ? L[0].t : 0, base = ['k', 't', 'y', 'want', 'shown', 'pinned'];
-    return L.map(function (r) {
-      var head = ('+' + (r.t - t0)).padStart(7) + '  y' + String(r.y).padStart(6) + '  step ' + r.want + '/' + r.shown + (r.pinned ? ' pinned  ' : '         ') + r.k;
-      if (r.k !== 'wheel') {
-        return head + Object.keys(r).filter(function (k) { return base.indexOf(k) < 0; }).map(function (k) { return ' ' + k + '=' + r[k]; }).join('');
-      }
-      return head + '  dy=' + r.dy + (r.dx ? ' dx=' + r.dx : '') + (r.dm ? ' mode=' + r.dm : '') + '  dt=' + r.dt + ' v=' + r.v +
-             ' peak=' + r.peak + ' low=' + r.low + ' run=' + r.run + '  ' + (r.fresh ? 'NEW ' : '    ') + r.why +
-             (r.pd ? '' : r.c === false && /absorbed|step|restart|cooldown/.test(r.why) ? '  [uncancellable: held]' : '  [scrolls]') + (r.held ? '  (holding)' : '');
-    }).join('\n');
-  };
-  if (cfg.debug) {
-    var dbg = document.getElementById('dbg');
-    dbg.hidden = false;
-    document.getElementById('copylog').addEventListener('click', function (e) {
-      e.preventDefault();
-      var text = window.__vsLogText(), a = this;
-      (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(
-        function () { a.textContent = 'copied ' + (window.__vsLog || []).length + ' events'; },
-        function () { console.log(text); a.textContent = 'printed to console'; });
-    });
-    document.getElementById('clearlog').addEventListener('click', function (e) {
-      e.preventDefault();
-      if (window.__vsLog) window.__vsLog.length = 0;
-      document.getElementById('copylog').textContent = 'copy debug log';
-    });
-  }
+  // ?debug=1 turns on the section's recorder: a "copy scroll log" button appears bottom left.
 
   var status = document.getElementById('status'), bar = document.getElementById('steps'), label = '';
   function render(step, shown, of) {

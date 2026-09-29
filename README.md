@@ -80,7 +80,7 @@ The preview stands in Georgia for Morland and mimics the site's `p { font-family
 
 Run it after changing anything about the wheel handling. It prints PASS or FAIL per case and exits non-zero on a failure; `node test/wheel-detector.test.js some-copy.html` tests another copy of the file. The limits sit just above today's results, so a regression shows up (planting either of the two earlier bugs back in fails it). Touch can't be simulated: test phones by hand.
 
-**Debug log.** Open the preview with `?debug=1` (`http://localhost:8933/preview/?debug=1`) and the section records every wheel event and step: speed, timing, whether the detector counted it as new, what was done with it, and whether the browser actually let it be cancelled. The panel's "copy debug log" copies it as text (one line per event). The same switch is `debug: true` in CFG, which fills `window.__vsLog` on any page; leave it off on the live site.
+**Debug log.** Add `?vsdebug` to the address of any page with the section (the live site on a phone included), or open the preview with `?debug=1`, and the section records every wheel event, touch, swipe and step: speed, timing, whether the detector counted it as new, what was done with it, whether the browser actually let it be cancelled, and the state flags (S snapping, H holding, F frozen, X leaving, R greying out, T finger down, L touch-locked, A typing). A small "copy scroll log" button appears bottom left; tap it and paste the text into a message. Without the flag nothing is recorded and no button appears, so it's safe to leave in the live file. (`debug: true` in CFG does the same on every page load.)
 
 ## Notes
 
