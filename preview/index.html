@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scroll reveal preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alan+Sans:wght@300..900&display=swap" rel="stylesheet">
+<style>
+/* MOCK ONLY. A stand-in page around the section so it can be scrolled into and out of.
+   Nothing in this file goes to Squarespace; the section itself is loaded unchanged from
+   ../squarespace/ so what you see here is exactly the file you would paste.            */
+body { margin: 0; background: #fff; color: #0B0F0E; font-family: 'Alan Sans', system-ui, sans-serif; }
+/* the site's !important paragraph font rule, so the section's own override is exercised */
+p { font-family: 'Alan Sans', system-ui, sans-serif !important; }
+/* stand-ins for Morland / Morland Bold, which aren't installed here */
+h1, h2, h3 { font-family: Georgia, 'Times New Roman', serif; font-weight: 400; margin: 0 0 .4em; line-height: 1.15; }
+.vs-reveal { --vs-font-bold: Georgia, serif; --vs-bold-weight: 700; }
+
+.wrap { max-width: 1320px; margin: 0 auto; padding: 0 clamp(1rem, 4vw, 3rem); box-sizing: border-box; }
+.nav { display: flex; justify-content: space-between; align-items: center; padding: 22px 0; border-bottom: 1px solid #e6e2dc; font-size: 15px; }
+.nav span + span { color: #6b6762; }
+.hero { min-height: 75vh; display: flex; align-items: center; }
+h1 { font-size: clamp(2rem, 5vw, 4rem); max-width: 14ch; }
+.filler { padding: 14vh 0; }
+.filler p, .hero p { max-width: 680px; font-size: 19px; line-height: 1.6; margin: 0 0 1em; }
+.hint { color: #8B0A2F; font-weight: 700; }
+.mock { color: #8a857f; font-size: 14px; }
+
+/* the switcher / readout */
+.hud { position: fixed; top: 12px; right: 12px; z-index: 99999; min-width: 250px;
+       font: 13px/1.4 system-ui, -apple-system, sans-serif; background: rgba(11,15,14,.94); color: #fff;
+       border-radius: 10px; padding: 10px 12px; box-shadow: 0 6px 24px rgba(0,0,0,.25); }
+.hud .title { font-weight: 700; margin-bottom: 6px; opacity: .8; }
+.hud a { color: #fff; text-decoration: none; display: block; padding: 5px 8px; border-radius: 6px; }
+.hud a:hover { background: rgba(255,255,255,.12); }
+.hud a.on, .hud a.on:hover { background: #8B0A2F; }
+.hud .row { display: flex; gap: 4px; margin-top: 6px; }
+.hud .row a { flex: 1; text-align: center; border: 1px solid rgba(255,255,255,.2); }
+.hud .status { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.15); font-variant-numeric: tabular-nums; }
+.hud .steps { display: flex; gap: 3px; margin-top: 6px; }
+.hud .steps i { flex: 1; height: 4px; background: rgba(255,255,255,.2); border-radius: 2px; transition: background .2s; }
+.hud .steps i.on { background: #fff; }
+.hud .steps i.half { background: rgba(255,255,255,.55); }
+@media (max-width: 767px) { .hud { top: auto; bottom: 10px; right: 10px; left: 10px; min-width: 0; } }
+</style>
+</head>
+<body>
+
+<div class="hud" id="hud">
+  <div class="title">Scroll reveal · preview</div>
+  <a href="?v=2&amp;mode=gesture" data-v="2" data-mode="gesture">A · gesture: one flick, one sentence</a>
+  <a href="?v=2&amp;mode=scroll" data-v="2" data-mode="scroll">B · scroll: sentences as you pass</a>
+  <a href="?v=1" data-v="1">v1 · original word scrub</a>
+  <div class="row" id="typing"><a href="#" data-typing="words">by word</a><a href="#" data-typing="chars">by letter</a></div>
+  <div class="status" id="status">loading…</div>
+  <div class="steps" id="steps"></div>
+</div>
+
+<header class="wrap nav"><span>Ambitious Impact</span><span class="mock">mock page around the section</span></header>
+
+<section class="wrap hero">
+  <div>
+    <h1>The section above the story</h1>
+    <p>Filler so there is something to scroll from. On the real site this is whatever sits above the
+      story block. The <strong>bold text here</strong> only exists so the section can copy a real bold font,
+      the way it does on Squarespace.</p>
+    <p class="hint">↓ scroll down</p>
+  </div>
+</section>
+
+<div id="mount"></div>
+
+<section class="wrap filler">
+  <h2>The section below the story</h2>
+  <p>More filler, so the page has somewhere to go once the story is told. Scroll back up into the section
+    to see it run in reverse.</p>
+  <p>Version A holds the page on the section: every scroll gesture types the next sentence, keyboard
+    arrows and space work too, and once the last sentence is typed the next gesture lets the page move on.
+    Version B never holds the page: it types each sentence as you scroll past its place, so a hard flick
+    types two or three in quick succession and a small one types none.</p>
+  <p>On phones both behave like version B (touch scrolling is never intercepted).</p>
+</section>
+
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  var v = q.get('v') === '1' ? '1' : '2';
+  var mode = q.get('mode') === 'scroll' ? 'scroll' : 'gesture';
+  var typing = q.get('typing') === 'chars' ? 'chars' : 'words';
+  window.VS_REVEAL_CONFIG = { mode: mode, typing: typing };
+
+  var label = v === '1' ? 'v1 · scrubbed to scroll'
+            : (mode === 'gesture' ? 'A · gesture' : 'B · scroll') + ' · ' + (typing === 'chars' ? 'letters' : 'words');
+
+  document.querySelectorAll('#hud a[data-v]').forEach(function (a) {
+    a.classList.toggle('on', a.dataset.v === v && (v === '1' || a.dataset.mode === mode));
+    if (a.dataset.v === '2') a.href = '?v=2&mode=' + a.dataset.mode + '&typing=' + typing;
+  });
+  document.querySelectorAll('#typing a').forEach(function (a) {
+    a.classList.toggle('on', v === '2' && a.dataset.typing === typing);
+    a.href = '?v=2&mode=' + mode + '&typing=' + a.dataset.typing;
+  });
+
+  var status = document.getElementById('status'), bar = document.getElementById('steps');
+  function render(step, shown, of) {
+    status.textContent = label + ' · step ' + step + ' / ' + of + (shown !== step ? ' (typing…)' : '');
+    bar.innerHTML = '';
+    for (var i = 1; i <= of; i++) {
+      var b = document.createElement('i');
+      b.className = i <= shown ? 'on' : (i <= step ? 'half' : '');
+      bar.appendChild(b);
+    }
+  }
+  document.addEventListener('vs-reveal:step', function (e) { render(e.detail.step, e.detail.shown, e.detail.of); });
+
+  // Load the pasteable file as-is: markup and <style> go where the Code Block would be,
+  // the <script> is re-created so the browser runs it.
+  var file = v === '1' ? '../squarespace/v1-word-scrub.html' : '../squarespace/v2-sentence-steps.html';
+  fetch(file, { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (html) {
+    var doc = new DOMParser().parseFromString(html, 'text/html');
+    var mount = document.getElementById('mount'), scripts = [];
+    var nodes = Array.prototype.slice.call(doc.head.childNodes).concat(Array.prototype.slice.call(doc.body.childNodes));
+    nodes.forEach(function (n) {
+      if (n.nodeName === 'SCRIPT') scripts.push(n.textContent);
+      else if (n.nodeName === 'STYLE') document.head.appendChild(document.importNode(n, true));
+      else if (n.nodeType === 1) mount.appendChild(document.importNode(n, true));
+    });
+    scripts.forEach(function (code) {
+      var s = document.createElement('script');
+      s.textContent = code;
+      document.body.appendChild(s);
+    });
+    if (v === '1') status.textContent = label;
+  }).catch(function (e) { status.textContent = 'could not load ' + file + ': ' + e; });
+})();
+</script>
+</body>
+</html>

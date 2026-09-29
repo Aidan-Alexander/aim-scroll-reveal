@@ -1,0 +1,614 @@
+<!--
+  ================================================================
+  AIM website  ·  scroll-reveal story section  ·  v2 "sentence steps"
+  ----------------------------------------------------------------
+  Source of truth + version history:
+    https://github.com/Aidan-Alexander/aim-scroll-reveal
+  This file in the repo: squarespace/v2-sentence-steps.html
+
+  To change anything: edit the file in the repo (the GitHub web editor
+  is fine), commit, then paste the WHOLE file into the page's Code Block.
+  Edits made only inside Squarespace are lost the next time someone pastes.
+
+  Two versions to try, switched by `mode` in CONFIG below:
+    'gesture'  version A: every scroll gesture types one sentence; the page
+               waits on the section until the story is told
+    'scroll'   version B: sentences type as you scroll past them; nothing
+               is ever held
+  Previous version (word-by-word scrub): squarespace/v1-word-scrub.html
+  ================================================================
+-->
+<div class="vs-reveal">
+
+  <!-- invisible probe: fallback source for the heading font -->
+  <h2 class="vs-reveal__probe" aria-hidden="true">Aa</h2>
+
+  <div class="vs-reveal__inner">
+
+    <!-- THE TEXT. Edit freely: any wording, any number of sentences.
+         Sentences are detected automatically at . ! ?  and each one is a step.
+         <strong> = the burgundy emphasis. See README for the rare cases where
+         you want to control the split by hand.                              -->
+
+    <p class="vs-reveal__p">Choose a predictable path, the career everyone thinks is great, but feels empty. Keep wondering if you&rsquo;re really changing anyone&rsquo;s life.</p>
+
+    <p class="vs-reveal__p">Or choose <strong>impact</strong>. Choose to use your time and talent to <strong>help others</strong>. Follow the evidence and <strong>build something that matters</strong>.</p>
+
+  </div>
+</div>
+
+<style>
+/* AIM scroll-reveal v2 · https://github.com/Aidan-Alexander/aim-scroll-reveal */
+.vs-reveal {
+  /* ---- TUNE THESE ---- */
+  --vs-color:      #0B0F0E;   /* typed words */
+  --vs-bold-color: #8B0A2F;   /* typed words inside <strong> */
+  --vs-muted:      #C6C2BC;   /* words not typed yet */
+  --vs-size:       clamp(1.6rem, min(4.2vw, 7.5vh), 3.8rem);  /* vh guard: short windows shrink */
+  --vs-leading:    1.3;
+  --vs-gap:        1.4em;   /* space between the paragraphs */
+  --vs-maxwidth:   1320px;  /* max line length */
+  --vs-pad:        clamp(1rem, 4vw, 3rem);   /* RIGHT gutter only */
+  --vs-font:       'rcl-morland-e7uypi';   /* Squarespace's name for Morland */
+  /* --vs-font-bold:   'Morland Bold';       <- only if auto-detection fails */
+  /* --vs-bold-weight: 700;                  <- pair it with the right weight */
+  /* -------------------- */
+
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100svh;
+  background: transparent;
+}
+
+.vs-reveal__inner {
+  /* width:100% + max-width rather than width:min(px,%), so the measure
+     never depends on the inline width ScrollTrigger puts on the pinned
+     element when it refreshes.                                        */
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--vs-maxwidth);
+  padding-left: 0;               /* flush left, so it lines up with the
+                                    rest of the section's content */
+  padding-right: var(--vs-pad);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--vs-gap);
+}
+
+.vs-reveal__p {
+  margin: 0;
+  color: var(--vs-color);
+  font-size: var(--vs-size);
+  line-height: var(--vs-leading);
+  font-kerning: none;
+  text-wrap: pretty;
+  transform-origin: left center;
+  will-change: transform, opacity;
+
+  /* !important is required: the site's Custom CSS has a
+     `p { font-family: 'Alan Sans' !important }` rule, and only
+     !important can outrank !important. .vs-reveal__p is a class,
+     so it beats the bare `p` selector on specificity.             */
+  font-family: var(--vs-font, Georgia, serif) !important;
+  font-weight: 400 !important;
+}
+
+/* Bold is a SEPARATE font family in Squarespace, not just a weight.
+   Both vars are filled in at runtime by copying a real <strong> on
+   the page, so we inherit whatever actually works there.            */
+.vs-reveal__p strong {
+  font-family: var(--vs-font-bold, var(--vs-font, Georgia, serif)) !important;
+  font-weight: var(--vs-bold-weight, 700) !important;
+  color: var(--vs-bold-color) !important;
+}
+
+/* Every word (or letter, in 'chars' mode) is a .vs-u span. It starts in
+   the muted colour; the script tweens its --vs-w to the real colour when
+   its sentence is typed. Spans stay display:inline, so line-breaking is
+   untouched. !important so no site rule can recolour them.            */
+.vs-reveal .vs-u {
+  color: var(--vs-w, var(--vs-muted)) !important;
+}
+
+/* No script (CDN blocked) or reduced motion: everything in its final colour. */
+.vs-reveal.is-static .vs-u        { --vs-w: var(--vs-color); }
+.vs-reveal.is-static strong .vs-u { --vs-w: var(--vs-bold-color); }
+@media (prefers-reduced-motion: reduce) {
+  .vs-reveal .vs-u        { --vs-w: var(--vs-color) !important; }
+  .vs-reveal strong .vs-u { --vs-w: var(--vs-bold-color) !important; }
+}
+
+/* probe is measured, never seen */
+.vs-reveal__probe {
+  position: absolute;
+  top: 0; left: -9999px;
+  width: 1px; height: 0;
+  margin: 0; padding: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Phones only: bump the type up. The desktop clamp bottoms out at
+   1.6rem on narrow screens, which reads small on a phone.         */
+@media (max-width: 767px) {
+  .vs-reveal {
+    --vs-size:     clamp(1.6rem, 7.5vw, 2.3rem);
+    --vs-leading:  1.25;
+    --vs-gap:      1.1em;
+    --vs-pad:      clamp(1rem, 6vw, 2rem);
+  }
+}
+</style>
+
+<script>
+/* AIM scroll-reveal v2 · https://github.com/Aidan-Alexander/aim-scroll-reveal */
+(function () {
+  if (window.__vsRevealInit) return;
+  window.__vsRevealInit = true;
+
+  /* ============ CONFIG ============ */
+  var CFG = {
+    mode:         'gesture',  // 'gesture' = version A: each scroll gesture types one sentence, the page waits
+                              // 'scroll'  = version B: sentences type as you scroll past them, nothing is held
+    typing:       'words',    // 'words' or 'chars': what lights up one at a time
+
+    // Scroll geometry, in screen-heights
+    stepDistance: 0.5,        // scrolling per sentence (version B; version A snaps by the same amount)
+    lead:         0.1,        // between the section locking in and the first sentence
+    hold:         0.7,        // version B: finished text stays this long before the page moves on
+    holdGesture:  0.3,        // version A: same, but the page only moves when you gesture anyway
+
+    // Typing feel, in seconds
+    wordTime:     0.16,       // one word's fade from muted to full
+    wordStagger:  0.045,      // gap between one word starting and the next
+    charTime:     0.08,       // same two, for 'chars'
+    charStagger:  0.014,
+    maxStepTime:  1.1,        // long sentences speed up so none takes longer than this
+
+    // Earlier paragraph when a new one starts
+    dimOpacity:   0.5,
+    dimScale:     0.85,
+    dimTime:      0.7,
+
+    // Version A only
+    snapTime:     0.4,        // seconds for the scroll position to settle on a step
+    cooldown:     250,        // ms: gestures closer together than this count as one
+    gestureGap:   150,        // ms of quiet that ends a gesture (trackpad inertia is a continuous stream)
+
+    // Full stops that do not end a sentence (lower-case, no trailing dot)
+    abbreviations: 'e.g i.e etc vs mr mrs ms dr prof st no cf approx'
+  };
+  // A page can override any of these by defining window.VS_REVEAL_CONFIG
+  // before this script runs (the local preview uses it to switch modes).
+  var override = window.VS_REVEAL_CONFIG || {};
+  for (var key in override) {
+    if (Object.prototype.hasOwnProperty.call(override, key)) CFG[key] = override[key];
+  }
+  /* ================================ */
+
+  var GSAP_URL = 'https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js';
+  var ST_URL   = 'https://cdn.jsdelivr.net/npm/gsap@3/dist/ScrollTrigger.min.js';
+
+  function load(src) {
+    return new Promise(function (res, rej) {
+      var s = document.createElement('script');
+      s.src = src; s.async = false;
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+
+  // ---------- text -> words -> sentences ----------
+
+  // Wrap every word of a paragraph in a span, leaving <strong>, whitespace
+  // and line-breaking untouched. In 'chars' mode each letter gets its own
+  // span inside the word span. Returns [{ el, text, manual }] in reading
+  // order; `manual` is the enclosing <span class="vs-s">, if any.
+  function collectWords(p) {
+    var nodes = [], words = [];
+    var walker = document.createTreeWalker(p, NodeFilter.SHOW_TEXT, null);
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+
+    nodes.forEach(function (node) {
+      if (!node.nodeValue.trim()) return;
+      var parent = node.parentNode;
+      var manual = parent.closest ? parent.closest('.vs-s') : null;
+      if (manual && !p.contains(manual)) manual = null;
+
+      var frag = document.createDocumentFragment();
+      node.nodeValue.split(/(\s+)/).forEach(function (part) {
+        if (!part) return;
+        if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(part)); return; }
+        var word = document.createElement('span');
+        word.className = 'vs-word';
+        if (CFG.typing === 'chars') {
+          Array.from(part).forEach(function (ch) {
+            var c = document.createElement('span');
+            c.className = 'vs-u';
+            c.textContent = ch;
+            word.appendChild(c);
+          });
+        } else {
+          word.className += ' vs-u';
+          word.textContent = part;
+        }
+        frag.appendChild(word);
+        words.push({ el: word, text: part, manual: manual });
+      });
+      parent.replaceChild(frag, node);
+    });
+    return words;
+  }
+
+  // Group the words of one paragraph into sentences.
+  // Manual: if the paragraph uses <span class="vs-s"> wrappers, each one is
+  // a sentence (words outside any wrapper join the sentence before them).
+  // Automatic: a sentence ends at a word ending in . ! ? (closing quotes and
+  // brackets allowed after it), unless it is a listed abbreviation or a
+  // single-letter initial, or the next word does not start with a capital
+  // letter, digit or opening quote.
+  function splitSentences(words) {
+    var groups = [], cur = [];
+
+    if (words.some(function (w) { return w.manual; })) {
+      var last = null;
+      words.forEach(function (w) {
+        if (w.manual && w.manual !== last) {
+          if (cur.length) groups.push(cur);
+          cur = []; last = w.manual;
+        }
+        cur.push(w);
+      });
+      if (cur.length) groups.push(cur);
+      return groups;
+    }
+
+    var abbr = {};
+    String(CFG.abbreviations).split(/\s+/).forEach(function (a) { if (a) abbr[a.toLowerCase()] = true; });
+    var END   = /[.!?…]+["'”’)\]]*$/;
+    var CLOSE = /["'”’)\]]+$/;
+    var PUNCT = /[.!?…]+$/;
+    var OPEN  = /^["'“‘(\[]*[A-Z0-9]/;
+
+    words.forEach(function (w, i) {
+      cur.push(w);
+      if (!END.test(w.text)) return;
+      var next = words[i + 1];
+      if (next) {
+        var core = w.text.replace(CLOSE, '').replace(PUNCT, '').toLowerCase();
+        if (abbr[core] || /^[a-hj-z]$/.test(core)) return;   // "e.g." / an initial, mid-sentence
+        if (!OPEN.test(next.text)) return;                    // no capital next: not a sentence end
+      }
+      groups.push(cur); cur = [];
+    });
+    if (cur.length) groups.push(cur);
+    return groups;
+  }
+
+  // ---------- fonts (Squarespace) ----------
+
+  function adoptFonts(block) {
+    // Adopt the font of a real heading, whatever Squarespace calls it.
+    // A genuine heading elsewhere on the page beats our injected probe,
+    // because it definitely carries the site's real heading styling.
+    var manual = getComputedStyle(block).getPropertyValue('--vs-font').trim();
+    var src = document.querySelector(
+                'h1:not(.vs-reveal__probe), h2:not(.vs-reveal__probe), h3:not(.vs-reveal__probe)'
+              ) || block.querySelector('.vs-reveal__probe');
+    var detected = src ? getComputedStyle(src).fontFamily : '';
+
+    // Layered stack: our font first; if Squarespace ever renames it,
+    // the browser falls through to whatever the headings are using.
+    var seen = {}, stack = [];
+    [manual, detected, 'Georgia', 'serif'].join(',').split(',').forEach(function (name) {
+      name = name.trim();
+      var k = name.replace(/['"]/g, '').toLowerCase();
+      if (name && !seen[k]) { seen[k] = 1; stack.push(name); }
+    });
+    stack = stack.join(', ');
+    block.style.setProperty('--vs-font', stack);
+
+    // Bold: copy a real <strong> from elsewhere on the page. Squarespace
+    // serves each weight as its own family, and the rule that applies the
+    // bold family is scoped so a Code Block never matches it - which is why
+    // an un-helped <strong> in here gets a synthesised (fake) bold.
+    var boldManual = getComputedStyle(block).getPropertyValue('--vs-font-bold').trim();
+    var boldSrc = null, all = document.querySelectorAll('strong, b');
+    for (var i = 0; i < all.length; i++) {
+      if (!block.contains(all[i]) && all[i].textContent.trim()) { boldSrc = all[i]; break; }
+    }
+    if (!boldManual && boldSrc) {
+      var bs = getComputedStyle(boldSrc);
+      block.style.setProperty('--vs-font-bold', bs.fontFamily);
+      block.style.setProperty('--vs-bold-weight', bs.fontWeight);
+    }
+
+    window.__vsFontDebug = {
+      manual: manual, detected: detected, stack: stack,
+      boldFrom: boldSrc ? (boldSrc.tagName + '.' + (boldSrc.className || '(no class)')) : 'none found',
+      boldFamily: boldSrc ? getComputedStyle(boldSrc).fontFamily : null,
+      boldWeight: boldSrc ? getComputedStyle(boldSrc).fontWeight : null
+    };
+  }
+
+  // ---------- one block ----------
+
+  function setup(block, reduced) {
+    adoptFonts(block);
+
+    var paras = Array.prototype.slice.call(block.querySelectorAll('.vs-reveal__p'));
+    if (!paras.length) return;
+
+    // Steps: one per sentence, in reading order. The first sentence of a
+    // paragraph also dims the paragraph before it.
+    var steps = [], allUnits = [];
+    paras.forEach(function (p, pi) {
+      splitSentences(collectWords(p)).forEach(function (group, gi) {
+        var units = [];
+        group.forEach(function (w) {
+          if (CFG.typing === 'chars') units.push.apply(units, w.el.querySelectorAll('.vs-u'));
+          else units.push(w.el);
+        });
+        allUnits.push.apply(allUnits, units);
+        steps.push({ units: units, dim: (gi === 0 && pi > 0) ? [paras[pi - 1]] : [] });
+      });
+    });
+    var N = steps.length;
+    if (!N) return;
+
+    if (reduced) { block.classList.add('is-static'); return; }
+
+    var cs = getComputedStyle(block);
+    var colText  = cs.getPropertyValue('--vs-color').trim() || '#000';
+    var colBold  = cs.getPropertyValue('--vs-bold-color').trim() || colText;
+    var colMuted = cs.getPropertyValue('--vs-muted').trim() || '#bbb';
+    allUnits.forEach(function (u) { u.__vsTarget = u.closest('strong, b') ? colBold : colText; });
+    gsap.set(allUnits, { '--vs-w': colMuted });
+
+    // ---- state ----
+    var gesture = CFG.mode === 'gesture';
+    var shown = 0;        // steps fully typed
+    var desired = 0;      // steps that should be typed
+    var active = null;    // the timeline currently typing or untyping
+    var activeIdx = 0;
+    var snapping = false; // version A: scroll position is being tweened onto a step
+    var st;
+
+    // version A input state
+    var proxy = { y: 0 };
+    var consumed = false;     // the gesture in progress was taken by us (so swallow its inertia tail)
+    var touching = false;
+    var lockUntil = 0, lastInputTs = -1e9, gestureStart = 0, lastSign = 0;
+    var hist = [];            // recent wheel samples {t, mag}
+
+    function announce() {
+      try {
+        block.dispatchEvent(new CustomEvent('vs-reveal:step', {
+          bubbles: true,
+          detail: { step: desired, shown: shown, of: N, mode: CFG.mode }
+        }));
+      } catch (e) {}
+    }
+
+    // One paused timeline per step: type the sentence (reversing it untypes
+    // it, last word first) and, for a paragraph's first sentence, dim the
+    // paragraph before.
+    var chars = CFG.typing === 'chars';
+    var tls = [null];
+    steps.forEach(function (step, i) {
+      var k = i + 1, n = step.units.length;
+      var dur = chars ? CFG.charTime : CFG.wordTime;
+      var gap = chars ? CFG.charStagger : CFG.wordStagger;
+      gap = Math.min(gap, Math.max(0.005, (CFG.maxStepTime - dur) / Math.max(1, n - 1)));
+      var tl = gsap.timeline({
+        paused: true,
+        onComplete:        function () { shown = k;     active = null; announce(); tick(); },
+        onReverseComplete: function () { shown = k - 1; active = null; announce(); tick(); }
+      });
+      tl.to(step.units, {
+        '--vs-w': function (idx, el) { return el.__vsTarget; },
+        duration: dur, stagger: gap, ease: 'none'
+      }, 0);
+      if (step.dim.length) {
+        tl.to(step.dim, { opacity: CFG.dimOpacity, scale: CFG.dimScale, duration: CFG.dimTime, ease: 'power2.out' }, 0);
+      }
+      tls.push(tl);
+    });
+
+    // Sequencer: walks `shown` towards `desired` one step at a time, so a
+    // big scroll types sentences one after another rather than all at once,
+    // and a change of direction mid-sentence just reverses that sentence.
+    function tick() {
+      if (active) {
+        if (desired >= activeIdx && active.reversed()) active.play();
+        else if (desired < activeIdx && !active.reversed()) active.reverse();
+        return;
+      }
+      if (desired > shown)      { activeIdx = shown + 1; active = tls[activeIdx]; active.play(0); }
+      else if (desired < shown) { activeIdx = shown;     active = tls[activeIdx]; active.reverse(); }
+    }
+    function setDesired(k) {
+      k = Math.max(0, Math.min(N, k));
+      if (k === desired) return;
+      desired = k; announce(); tick();
+    }
+
+    // ---- scroll geometry ----
+    // Pinned for lead + (N-1)*step + hold screen-heights. Sentence k is typed
+    // once the scroll position passes threshold k. Version A snaps the scroll
+    // position onto an anchor a little way inside each zone.
+    function geo() {
+      var vh = window.innerHeight;
+      var z = CFG.stepDistance * vh, lead = CFG.lead * vh;
+      var hold = (gesture ? CFG.holdGesture : CFG.hold) * vh;
+      return { z: z, lead: lead, hold: hold, length: lead + (N - 1) * z + hold, margin: Math.min(0.3 * z, 0.5 * hold) };
+    }
+    function threshold(k, g) { return g.lead + (k - 1) * g.z; }
+    function stepAt(self) {
+      var g = geo(), y = self.scroll() - self.start, k = 0;
+      while (k < N && y >= threshold(k + 1, g) - 0.5) k++;
+      return k;
+    }
+    function anchor(k) { var g = geo(); return st.start + threshold(k, g) + g.margin; }
+
+    st = ScrollTrigger.create({
+      trigger: block,
+      start: 'top top',
+      end: function () { return '+=' + Math.round(geo().length); },
+      pin: true,
+      pinSpacing: true,
+      anticipatePin: 1,
+      invalidateOnRefresh: true,
+      onUpdate:    function (self) { if (!snapping) setDesired(stepAt(self)); },
+      onLeave:     function () { if (!snapping) setDesired(N); },
+      onLeaveBack: function () { if (!snapping) setDesired(0); },
+      // Version A: arriving by wheel or keyboard lands straight on the first
+      // (or, from below, the last) sentence and swallows the rest of that gesture.
+      onEnter:     function () { if (gesture && recentInput()) { consumed = true; snapTo(1); } },
+      onEnterBack: function () { if (gesture && recentInput()) { consumed = true; snapTo(N); } }
+    });
+
+    // Landing mid-section (reload, back button): show the state without animating.
+    var m = stepAt(st);
+    for (var i = 1; i <= m; i++) tls[i].progress(1, true);
+    shown = desired = m;
+    announce();
+
+    // ---- version A: one gesture, one sentence ----
+    function recentInput() { return performance.now() - lastInputTs < 300; }
+
+    function scrollWindowTo(y) {
+      try { window.scrollTo({ top: y, left: 0, behavior: 'instant' }); }
+      catch (e) { window.scrollTo(0, y); }
+    }
+
+    function snapTo(k) {
+      k = Math.max(1, Math.min(N, k));
+      lastInputTs = performance.now();
+      setDesired(k);                          // start typing straight away...
+      snapping = true;                        // ...and let the scroll position catch up
+      gsap.killTweensOf(proxy);
+      proxy.y = window.pageYOffset;
+      gsap.to(proxy, {
+        y: anchor(k), duration: CFG.snapTime, ease: 'power2.out',
+        onUpdate: function () { scrollWindowTo(proxy.y); },
+        onComplete: function () { snapping = false; ScrollTrigger.update(); }
+      });
+    }
+
+    // Is this wheel event the start of a new gesture, or the continuation
+    // (inertia tail) of the one before? A new gesture: after a pause, a change
+    // of direction, a line/page-mode wheel (one event per notch), a repeated
+    // identical notch-sized delta, or the deltas growing again once the
+    // previous gesture was already decaying.
+    function isNewGesture(now, mag, sign, deltaMode) {
+      var last = hist[hist.length - 1], fresh;
+      if (!last) fresh = true;
+      else if (now - last.t > CFG.gestureGap) fresh = true;
+      else if (sign !== lastSign) fresh = true;
+      else if (deltaMode !== 0) fresh = true;
+      else if (mag >= 40 && mag === last.mag && now - last.t >= 25) fresh = true;
+      else {
+        var recent = 0;
+        for (var i = Math.max(0, hist.length - 3); i < hist.length; i++) recent = Math.max(recent, hist[i].mag);
+        fresh = now - gestureStart > 200 && mag >= 10 && mag > 1.5 * recent;
+      }
+      if (fresh) gestureStart = now;
+      hist.push({ t: now, mag: mag });
+      if (hist.length > 8) hist.shift();
+      lastSign = sign;
+      return fresh;
+    }
+
+    function onWheel(e) {
+      if (!gesture || touching || e.ctrlKey) return;
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+      var now = performance.now();
+      var mag = Math.abs(e.deltaY), sign = e.deltaY > 0 ? 1 : -1;
+      var fresh = isNewGesture(now, mag, sign, e.deltaMode);
+      lastInputTs = now;
+
+      if (!fresh) { if (consumed) e.preventDefault(); return; }   // tail of a gesture: keep whatever we decided
+
+      consumed = false;
+      if (!st.isActive) return;                                     // not on the section: native scrolling
+      var k = desired;
+      if (sign > 0 && k >= N) return;                               // story told: let the page move on
+      if (sign < 0 && k <= 1) return;                               // back at the start: let the page go back
+      consumed = true;
+      e.preventDefault();
+      if (now < lockUntil) return;
+      lockUntil = now + CFG.cooldown;
+      snapTo(k + sign);
+    }
+
+    function onKey(e) {
+      if (!gesture || !st.isActive) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      var t = e.target;
+      if (t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return;
+      var dir = 0;
+      if (e.key === 'ArrowDown' || e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey)) dir = 1;
+      else if (e.key === 'ArrowUp' || e.key === 'PageUp' || (e.key === ' ' && e.shiftKey)) dir = -1;
+      if (!dir) return;
+      var now = performance.now();
+      lastInputTs = now;
+      var k = desired;
+      if (dir > 0 && k >= N) return;
+      if (dir < 0 && k <= 1) return;
+      e.preventDefault();
+      if (now < lockUntil) return;
+      lockUntil = now + CFG.cooldown;
+      snapTo(k + dir);
+    }
+
+    if (gesture) {
+      window.addEventListener('wheel', onWheel, { passive: false });
+      window.addEventListener('keydown', onKey);
+      // Touch is never intercepted: on phones both versions behave like version B.
+      window.addEventListener('touchstart', function () { touching = true; }, { passive: true });
+      window.addEventListener('touchend',   function () { touching = false; }, { passive: true });
+      window.addEventListener('touchcancel', function () { touching = false; }, { passive: true });
+    }
+
+    // Handy in the console / for the preview page.
+    window.__vsReveal = window.__vsReveal || [];
+    window.__vsReveal.push({
+      block: block, steps: N, config: CFG, trigger: st,
+      step: function () { return desired; },
+      goTo: function (k) { gesture ? snapTo(k) : setDesired(k); }
+    });
+  }
+
+  function init() {
+    var blocks = document.querySelectorAll('.vs-reveal');
+    if (!blocks.length) return;
+    var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    gsap.registerPlugin(ScrollTrigger);
+    blocks.forEach(function (block) { setup(block, reduced); });
+    ScrollTrigger.refresh();
+    window.addEventListener('load', function () { ScrollTrigger.refresh(); });
+  }
+
+  function boot() {
+    var chain = window.gsap && window.ScrollTrigger
+      ? Promise.resolve()
+      : load(GSAP_URL).then(function () { return load(ST_URL); });
+    chain.then(init).catch(function (e) {
+      // If the CDN is blocked, show the text rather than a muted screen.
+      document.querySelectorAll('.vs-reveal').forEach(function (el) { el.classList.add('is-static'); });
+      console.error('[vs-reveal]', e);
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+})();
+</script>
