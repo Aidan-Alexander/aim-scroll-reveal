@@ -1,0 +1,297 @@
+<div class="vs-reveal">
+
+  <!-- invisible probe: fallback source for the heading font -->
+  <h2 class="vs-reveal__probe" aria-hidden="true">Aa</h2>
+
+  <div class="vs-reveal__inner">
+
+    <p class="vs-reveal__p" data-vs-step="1">Choose a predictable path, the career everyone thinks is great, but feels empty. Keep wondering if you&rsquo;re really changing anyone&rsquo;s life.</p>
+
+    <p class="vs-reveal__p" data-vs-step="2">Or choose <strong>impact</strong>. Choose to use your time and talent to <strong>help others</strong>. Follow the evidence and <strong>build something that matters</strong>.</p>
+
+  </div>
+</div>
+
+<style>
+.vs-reveal {
+  /* ---- TUNE THESE ---- */
+  --vs-color:      #0B0F0E;
+  --vs-bold-color: #8B0A2F;
+  --vs-size:       clamp(1.6rem, min(4.2vw, 7.5vh), 3.8rem);  /* vh guard: short windows shrink */
+  --vs-leading:    1.3;
+  --vs-gap:        1.4em;   /* space between the two paragraphs */
+  --vs-maxwidth:   1320px;  /* max line length */
+  --vs-pad:        clamp(1rem, 4vw, 3rem);   /* RIGHT gutter only */
+  --vs-font:       'rcl-morland-e7uypi';   /* Squarespace's name for Morland */
+  /* --vs-font-bold:   'Morland Bold';       <- only if auto-detection fails */
+  /* --vs-bold-weight: 700;                  <- pair it with the right weight */
+  /* -------------------- */
+
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100svh;
+  background: transparent;
+}
+
+.vs-reveal__inner {
+  /* width:100% + max-width rather than width:min(px,%), so the measure
+     never depends on the inline width ScrollTrigger puts on the pinned
+     element when it refreshes.                                        */
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--vs-maxwidth);
+  padding-left: 0;               /* flush left, so it lines up with the
+                                    rest of your section's content */
+  padding-right: var(--vs-pad);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--vs-gap);
+}
+
+.vs-reveal__p {
+  margin: 0;
+  color: var(--vs-color);
+  font-size: var(--vs-size);
+  line-height: var(--vs-leading);
+  font-kerning: none;
+  text-wrap: pretty;
+  transform-origin: left center;
+  will-change: transform, opacity;
+
+  /* !important is required: the site's Custom CSS has a
+     `p { font-family: 'Alan Sans' !important }` rule, and only
+     !important can outrank !important. .vs-reveal__p is a class,
+     so it beats the bare `p` selector on specificity.             */
+  font-family: var(--vs-font, Georgia, serif) !important;
+  font-weight: 400 !important;
+}
+
+/* Bold is a SEPARATE font family in Squarespace, not just a weight.
+   Both vars are filled in at runtime by copying a real <strong> on
+   the page, so we inherit whatever actually works there.            */
+.vs-reveal__p strong {
+  font-family: var(--vs-font-bold, var(--vs-font, Georgia, serif)) !important;
+  font-weight: var(--vs-bold-weight, 700) !important;
+  color: var(--vs-bold-color) !important;
+}
+
+/* probe is measured, never seen */
+.vs-reveal__probe {
+  position: absolute;
+  top: 0; left: -9999px;
+  width: 1px; height: 0;
+  margin: 0; padding: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Phones only: bump the type up. The desktop clamp bottoms out at
+   1.6rem on narrow screens, which reads small on a phone.         */
+@media (max-width: 767px) {
+  .vs-reveal {
+    --vs-size:     clamp(1.6rem, 7.5vw, 2.3rem);
+    --vs-leading:  1.25;
+    --vs-gap:      1.1em;
+    --vs-pad:      clamp(1rem, 6vw, 2rem);
+  }
+}
+
+/* word spans stay display:inline so line-breaking is untouched */
+.vs-reveal .vs-word { opacity: var(--vs-start, 0.12); }
+
+@media (prefers-reduced-motion: reduce) {
+  .vs-reveal .vs-word { opacity: 1 !important; }
+}
+</style>
+
+<script>
+(function () {
+  if (window.__vsRevealInit) return;
+  window.__vsRevealInit = true;
+
+  /* ============ CONFIG ============ */
+  var CFG = {
+    scrollLength:       4,     // desktop: how many screen-heights the section stays pinned
+    scrollLengthMobile: 2.5,   // mobile equivalent
+    startOpacity:       0.12,  // resting opacity of un-revealed words (0 = fully invisible)
+    dimOpacity:         0.5,   // what paragraph 1 fades to
+    dimScale:           0.85,  // what paragraph 1 shrinks to
+    useLenis:           false  // smooth-scroll inertia (affects the WHOLE page)
+  };
+  /* ================================ */
+
+  var GSAP_URL  = 'https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js';
+  var ST_URL    = 'https://cdn.jsdelivr.net/npm/gsap@3/dist/ScrollTrigger.min.js';
+  var LENIS_URL = 'https://cdn.jsdelivr.net/npm/lenis@1/dist/lenis.min.js';
+
+  function load(src) {
+    return new Promise(function (res, rej) {
+      var s = document.createElement('script');
+      s.src = src; s.async = false;
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+
+  // Wrap every word in a span, leaving <strong> and whitespace intact.
+  function splitWords(root) {
+    var words = [], nodes = [];
+    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+
+    nodes.forEach(function (node) {
+      if (!node.nodeValue.trim()) return;
+      var frag = document.createDocumentFragment();
+      node.nodeValue.split(/(\s+)/).forEach(function (part) {
+        if (!part) return;
+        if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(part)); return; }
+        var span = document.createElement('span');
+        span.className = 'vs-word';
+        span.textContent = part;
+        frag.appendChild(span);
+        words.push(span);
+      });
+      node.parentNode.replaceChild(frag, node);
+    });
+    return words;
+  }
+
+  function init() {
+    var blocks = document.querySelectorAll('.vs-reveal');
+    if (!blocks.length) return;
+
+    var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    gsap.registerPlugin(ScrollTrigger);
+
+    // ---- smooth scroll ----
+    if (CFG.useLenis && !reduced && window.Lenis && !window.__vsLenis) {
+      var lenis = new Lenis({ lerp: 0.07 });
+      window.__vsLenis = lenis;
+      lenis.on('scroll', ScrollTrigger.update);
+      gsap.ticker.add(function (t) { lenis.raf(t * 1000); });
+      gsap.ticker.lagSmoothing(0);
+    }
+
+    blocks.forEach(function (block) {
+      block.style.setProperty('--vs-start', CFG.startOpacity);
+
+      // Adopt the font of a real heading, whatever Squarespace calls it.
+      // A genuine heading elsewhere on the page beats our injected probe,
+      // because it definitely carries the site's real heading styling.
+      var manual = getComputedStyle(block).getPropertyValue('--vs-font').trim();
+      var src = document.querySelector(
+                  'h1:not(.vs-reveal__probe), h2:not(.vs-reveal__probe), h3:not(.vs-reveal__probe)'
+                ) || block.querySelector('.vs-reveal__probe');
+      var detected = src ? getComputedStyle(src).fontFamily : '';
+
+      // Layered stack: your font first; if Squarespace ever renames it,
+      // the browser falls through to whatever your headings are using.
+      var seen = {}, stack = [];
+      [manual, detected, 'Georgia', 'serif'].join(',').split(',').forEach(function (name) {
+        name = name.trim();
+        var key = name.replace(/['"]/g, '').toLowerCase();
+        if (name && !seen[key]) { seen[key] = 1; stack.push(name); }
+      });
+      stack = stack.join(', ');
+      block.style.setProperty('--vs-font', stack);
+
+      // Bold: copy a real <strong> from elsewhere on the page. Squarespace
+      // serves each weight as its own family, and the rule that applies the
+      // bold family is scoped so a Code Block never matches it - which is why
+      // an un-helped <strong> in here gets a synthesised (fake) bold.
+      var boldManual = getComputedStyle(block).getPropertyValue('--vs-font-bold').trim();
+      var boldSrc = null, all = document.querySelectorAll('strong, b');
+      for (var i = 0; i < all.length; i++) {
+        if (!block.contains(all[i]) && all[i].textContent.trim()) { boldSrc = all[i]; break; }
+      }
+      if (!boldManual && boldSrc) {
+        var bs = getComputedStyle(boldSrc);
+        block.style.setProperty('--vs-font-bold', bs.fontFamily);
+        block.style.setProperty('--vs-bold-weight', bs.fontWeight);
+      }
+
+      window.__vsFontDebug = {
+        manual: manual, detected: detected, stack: stack,
+        boldFrom: boldSrc ? (boldSrc.tagName + '.' + (boldSrc.className || '(no class)')) : 'none found',
+        boldFamily: boldSrc ? getComputedStyle(boldSrc).fontFamily : null,
+        boldWeight: boldSrc ? getComputedStyle(boldSrc).fontWeight : null
+      };
+
+      var p1 = block.querySelector('[data-vs-step="1"]');
+      var p2 = block.querySelector('[data-vs-step="2"]');
+      if (!p1 || !p2) return;
+
+      var w1 = splitWords(p1);
+      var w2 = splitWords(p2);
+
+      if (reduced) {
+        gsap.set([w1, w2], { opacity: 1 });
+        return;
+      }
+
+      var tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: block,
+          start: 'top top',
+          end: function () {
+            var mult = window.innerWidth < 768 ? CFG.scrollLengthMobile : CFG.scrollLength;
+            return '+=' + (window.innerHeight * mult);
+          },
+          scrub: true,
+          pin: true,
+          pinSpacing: true,
+          anticipatePin: 1,
+          invalidateOnRefresh: true
+        }
+      });
+
+      // 1. paragraph one lights up, word by word
+      tl.to(w1, { opacity: 1, ease: 'none', stagger: 1, duration: 1 })
+      // 2. beat
+        .to({}, { duration: 2 })
+        .addLabel('shift')
+      // 3. paragraph one recedes...
+        .to(p1, {
+          opacity: CFG.dimOpacity,
+          scale: CFG.dimScale,
+          ease: 'power2.out',
+          duration: 4
+        }, 'shift')
+      // 4. ...as paragraph two lights up
+        .to(w2, { opacity: 1, ease: 'none', stagger: 1, duration: 1 }, 'shift+=1')
+      // 5. hold on the finished state before releasing the pin
+        .to({}, { duration: 3 });
+    });
+
+    ScrollTrigger.refresh();
+    window.addEventListener('load', function () { ScrollTrigger.refresh(); });
+  }
+
+  function boot() {
+    var chain = window.gsap
+      ? Promise.resolve()
+      : load(GSAP_URL).then(function () { return load(ST_URL); });
+
+    if (CFG.useLenis && !window.Lenis) {
+      chain = chain.then(function () { return load(LENIS_URL); }).catch(function () {});
+    }
+    chain.then(init).catch(function (e) {
+      // If the CDN is blocked, show the text rather than an empty screen.
+      document.querySelectorAll('.vs-reveal .vs-word, .vs-reveal__p')
+        .forEach(function (el) { el.style.opacity = 1; });
+      console.error('[vs-reveal]', e);
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+})();
+</script>
