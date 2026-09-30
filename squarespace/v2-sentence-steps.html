@@ -647,7 +647,7 @@
     }
     function note(kind, o) {
       if (!log) return;
-      var r = { k: kind, t: Math.round(performance.now()), y: Math.round(window.pageYOffset), want: desired, shown: shown,
+      var r = { k: kind, t: Math.round(performance.now()), y: Math.round(window.pageYOffset), vh: window.innerHeight, want: desired, shown: shown,
                 pinned: !!(st && st.isActive), f: flags() };
       if (o) for (var key in o) r[key] = o[key];
       log.push(r);
@@ -655,9 +655,9 @@
     }
     if (log) {
       window.__vsLogText = function () {
-        var t0 = log.length ? log[0].t : 0, base = { k: 1, t: 1, y: 1, want: 1, shown: 1, pinned: 1, f: 1 };
+        var t0 = log.length ? log[0].t : 0, base = { k: 1, t: 1, y: 1, vh: 1, want: 1, shown: 1, pinned: 1, f: 1 };
         return log.map(function (r) {
-          var head = ('+' + (r.t - t0)).padStart(7) + '  y' + String(r.y).padStart(6) + '  step ' + r.want + '/' + r.shown +
+          var head = ('+' + (r.t - t0)).padStart(7) + '  y' + String(r.y).padStart(6) + ' vh' + r.vh + '  step ' + r.want + '/' + r.shown +
                      (r.pinned ? ' pinned ' : '        ') + (r.f || '-').padEnd(8) + ' ' + r.k;
           if (r.k !== 'wheel') {
             return head + Object.keys(r).filter(function (k) { return !base[k]; }).map(function (k) { return ' ' + k + '=' + r[k]; }).join('');
@@ -790,8 +790,13 @@
     // Pinned for lead + (N-1)*step + hold screen-heights. Sentence k is typed
     // once the scroll position passes threshold k. Version A snaps the scroll
     // position onto an anchor a little way inside each zone.
+    // All of it uses the screen height the pin was measured with (vhRef, set
+    // whenever ScrollTrigger re-measures): a phone's screen height changes as
+    // its browser bars slide in and out, without a re-measure, and working
+    // from the live height put the last sentences past the end of the pin.
+    var vhRef = window.innerHeight;
     function geo() {
-      var vh = window.innerHeight;
+      var vh = vhRef;
       var z = CFG.stepDistance * vh, lead = CFG.lead * vh;
       var hold = (gesture ? CFG.holdGesture : CFG.hold) * vh;
       return { z: z, lead: lead, hold: hold, length: lead + (N - 1) * z + hold, margin: Math.min(0.3 * z, 0.5 * hold) };
@@ -802,7 +807,10 @@
       while (k < N && y >= threshold(k + 1, g) - 0.5) k++;
       return k;
     }
-    function anchor(k) { var g = geo(); return k ? st.start + threshold(k, g) + g.margin : st.start + g.lead * 0.5; }
+    function anchor(k) {
+      var g = geo(), y = k ? st.start + threshold(k, g) + g.margin : st.start + g.lead * 0.5;
+      return Math.min(y, st.end - 2);                                // never snap out of the pin
+    }
 
     // Fit: if the text is taller than the screen (long copy, short window),
     // shrink the type until it isn't. Re-run whenever ScrollTrigger re-measures.
@@ -823,7 +831,7 @@
     st = ScrollTrigger.create({
       trigger: block,
       start: 'top top',
-      end: function () { return '+=' + Math.round(geo().length); },
+      end: function () { vhRef = window.innerHeight; return '+=' + Math.round(geo().length); },   // re-measured: take the current screen height
       pin: true,
       pinSpacing: true,
       anticipatePin: 1,
@@ -936,7 +944,12 @@
       gsap.killTweensOf(proxy); unhold();
       var scroller = document.scrollingElement || document.documentElement;
       var from = Math.max(window.pageYOffset, st.end);
-      var to = Math.max(from, Math.min(st.end + block.offsetHeight, scroller.scrollHeight - window.innerHeight));
+      // Aim for where the next content actually starts: the bottom of the pin's
+      // spacer, measured, rather than worked out from the section's height.
+      var box = block.parentElement && block.parentElement.classList.contains('pin-spacer') ? block.parentElement : block;
+      var nextTop = box.getBoundingClientRect().bottom + window.pageYOffset;
+      var to = Math.max(from, Math.min(nextTop, scroller.scrollHeight - window.innerHeight));
+      note('exit-target', { from: Math.round(from), to: Math.round(to), nextTop: Math.round(nextTop) });
       scrollWindowTo(from);
       proxy.y = from;
       gsap.to(proxy, {
@@ -954,14 +967,27 @@
     // visibly jumps. (Version B keeps its pin: its story is scroll-driven.)
     function retire() {
       if (retired || !gesture || desired < N) return;
-      var len = st.end - st.start, y = window.pageYOffset, below = y >= st.end;
-      note('retire', { below: below, len: Math.round(len) });
+      var scroller = document.scrollingElement || document.documentElement;
+      var len = st.end - st.start, y = window.pageYOffset, below = y >= st.end, docH = scroller.scrollHeight;
       retired = true;
       unhold(); thaw(true); lockTouch(false); tOurs = false;
       gsap.killTweensOf(proxy); snapping = exiting = false;
       st.kill(true);                                                 // unpin and remove the pin's spacing
-      if (below) scrollWindowTo(y - len);                            // same task as the kill, so no frame shows the jump
-      requestAnimationFrame(function () { ScrollTrigger.refresh(); });   // not from inside ScrollTrigger's own update
+      // Scroll back by exactly how much shorter the page got (measured, not
+      // assumed to be the pin length), in the same task as the kill, so no
+      // frame shows the jump.
+      var shrank = docH - scroller.scrollHeight;
+      if (below && shrank > 0) scrollWindowTo(y - shrank);
+      note('retire', { below: below, len: Math.round(len), shrank: Math.round(shrank), from: Math.round(y), to: Math.round(window.pageYOffset) });
+      if (log) {                                                     // debug: does anything move the page afterwards?
+        var until = performance.now() + 2000, onScroll = function () {
+          if (performance.now() > until) { window.removeEventListener('scroll', onScroll); return; }
+          note('scroll after retire');
+        };
+        window.addEventListener('scroll', onScroll, { passive: true });
+      }
+      // Other ScrollTriggers on the page (if any) need re-measuring now the page is shorter.
+      if (ScrollTrigger.getAll().length) requestAnimationFrame(function () { ScrollTrigger.refresh(); });
     }
 
     // ---- touch: one swipe, one sentence (version A) ----
