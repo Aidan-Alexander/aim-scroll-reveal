@@ -618,6 +618,7 @@
     var snapping = false; // version A: scroll position is being tweened onto a step
     var pace = 1, hurry = 0, lastGestureTs = -1e9;   // impatient scrolling: current speed, and how hurried the last gestures were
     var exiting = false;                            // the glide that leaves once the story is told is under way
+    var retired = false;                            // told and left: the pin is gone, the section is just part of the page
     var tailAccum = 0, risingRun = 0, gPeak = 0, gLow = 0, lastV = 0, detectFrom = 0;   // wheel bookkeeping, see isNewGesture / onWheel
     var lastDt = Infinity, lastDt2 = Infinity, lastDt3 = Infinity, lastSwipeTs = -1e9;
     var st;
@@ -836,8 +837,8 @@
         if (log && k !== desired) note('scroll-step', { to: k });
         setDesired(k);
       },
-      onLeave:     function () { note('leave'); lockTouch(false); unhold(); if (!snapping) setDesired(N); },
-      onLeaveBack: function () { note('leave-back'); lockTouch(false); unhold(); },   // what's been typed stays
+      onLeave:     function () { note('leave'); lockTouch(false); unhold(); if (!snapping) { setDesired(N); retire(); } },   // the exit glide retires when it lands
+      onLeaveBack: function () { note('leave-back'); lockTouch(false); unhold(); retire(); },   // what's been typed stays
       // Version A: arriving by wheel, keyboard or touch types the first
       // sentence at once (or, coming back, picks up where you left off) and
       // swallows the rest of that gesture: however big the swipe, nothing
@@ -876,6 +877,7 @@
     else if (steps[m - 1].mark) hideCaret();
     else placeCaret(steps[m - 1].units[steps[m - 1].units.length - 1]);
     announce();
+    if (m >= N && window.pageYOffset >= st.end) retire();            // landed below it (back button): already seen
 
     // ---- version A: one gesture, one sentence ----
     function recentInput() { return performance.now() - lastInputTs < 300; }
@@ -920,6 +922,7 @@
       hurry = 0; pace = 1;
       note('leave-up');
       scrollWindowTo(st.start - 1);
+      retire();                                                      // if the story is told, that was the last of the pin
     }
 
     // Once the story is told, the swipe that leaves doesn't fling the page:
@@ -939,8 +942,26 @@
       gsap.to(proxy, {
         y: to, duration: CFG.exitTime, ease: 'power1.inOut',
         onUpdate: function () { scrollWindowTo(proxy.y); },
-        onComplete: function () { exiting = snapping = false; thaw(); ScrollTrigger.update(); }
+        onComplete: function () { exiting = snapping = false; thaw(); retire(); }
       });
+    }
+
+    // Once the story has been told and you've left the section (either way),
+    // it retires: the pin is taken out, so from then on it's just the finished
+    // story on the page and scrolling passes straight through it, up or down.
+    // Taking the pin out shortens the page by the pinned stretch; if you're
+    // below it, the scroll position moves up by the same amount, so nothing
+    // visibly jumps. (Version B keeps its pin: its story is scroll-driven.)
+    function retire() {
+      if (retired || !gesture || desired < N) return;
+      var len = st.end - st.start, y = window.pageYOffset, below = y >= st.end;
+      note('retire', { below: below, len: Math.round(len) });
+      retired = true;
+      unhold(); thaw(true); lockTouch(false); tOurs = false;
+      gsap.killTweensOf(proxy); snapping = exiting = false;
+      st.kill(true);                                                 // unpin and remove the pin's spacing
+      if (below) scrollWindowTo(y - len);                            // same task as the kill, so no frame shows the jump
+      requestAnimationFrame(function () { ScrollTrigger.refresh(); });   // not from inside ScrollTrigger's own update
     }
 
     // ---- touch: one swipe, one sentence (version A) ----
@@ -951,6 +972,7 @@
     function lockTouch(on) { if (gesture) block.classList.toggle('is-touchlocked', !!on); }
 
     function onTouchStart(e) {
+      if (retired) return;                                            // just part of the page now: native scrolling
       lastTouchTs = performance.now();
       touching = true;
       // Self-repair: a new touch means any arriving fling is over. If the page
@@ -1005,7 +1027,7 @@
     // when it lands on something clickable, ends a text selection, or is the
     // browser's own click at the end of a swipe that was already taken.
     function onClick(e) {
-      if (!st.isActive) return;
+      if (retired || !st.isActive) return;
       var el = e.target;
       if (el && el.closest && el.closest('a, button, input, select, textarea, label, [role="button"]')) return;
       if (window.getSelection && String(window.getSelection())) return;
@@ -1122,7 +1144,7 @@
     // Handles one wheel event; returns what it did (for the debug log).
     function wheel(e) {
       wheelFresh = null;
-      if (!gesture || e.ctrlKey) return '';
+      if (!gesture || retired || e.ctrlKey) return '';
       if (touching) return 'ignored: finger down';
       if (!e.deltaY || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return 'ignored: sideways';   // sideways, or no movement at all (a zero delta would read as "up")
       var now = performance.now();
@@ -1166,7 +1188,7 @@
     }
 
     function onKey(e) {
-      if (!gesture || !st.isActive) return;
+      if (!gesture || retired || !st.isActive) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       var t = e.target;
       if (t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return;
