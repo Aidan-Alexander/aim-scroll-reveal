@@ -9,6 +9,10 @@
   To change anything: edit the file in the repo (the GitHub web editor
   is fine), commit, then paste the WHOLE file into the page's Code Block.
   Edits made only inside Squarespace are lost the next time someone pastes.
+  In the editor, size the Code Block as small as it will go (drag its
+  bottom edge up, on both the desktop and mobile layouts): the section
+  makes itself full screen on the live page. Any extra height left on the
+  block shows as a gap under the story (see README, Notes).
 
   Two behaviours, switched by `mode` in CONFIG below:
     'gesture'  version A (in use): every scroll gesture, click or tap types one sentence;
@@ -112,10 +116,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  min-height: 100lvh;   /* the screen as it is while scrolling (phone browser bars hidden), so the
-                           content is centred on what you actually see when the section pins */
   background: transparent;
+}
+
+/* Full screen once the script is running. In the Squarespace editor, where
+   scripts don't run, the section is then only as tall as its text, so the
+   Code Block can be sized small there (a block sized a screen tall in the
+   editor keeps that height on the live page, leaving a gap under the story
+   once it's done). On the live page the grid grows to fit this height.
+   lvh = the screen as it is while scrolling (phone browser bars hidden), so
+   the content is centred on what you actually see when the section pins. */
+.vs-reveal.is-ready {
+  min-height: 100vh;
+  min-height: 100lvh;
 }
 
 .vs-reveal__inner {
@@ -845,14 +858,19 @@
         if (log && k !== desired) note('scroll-step', { to: k });
         setDesired(k);
       },
-      onLeave:     function () { note('leave'); lockTouch(false); unhold(); if (!snapping) { setDesired(N); retire(); } },   // the exit glide retires when it lands
-      onLeaveBack: function () { note('leave-back'); lockTouch(false); unhold(); retire(); },   // what's been typed stays
+      onLeave:     function () { note('leave'); lockTouch(false); unhold(); if (!snapping) setDesired(N); },
+      onLeaveBack: function () { note('leave-back'); lockTouch(false); unhold(); maybeRetire(); },   // what's been typed stays
       // Version A: arriving by wheel, keyboard or touch types the first
       // sentence at once (or, coming back, picks up where you left off) and
       // swallows the rest of that gesture: however big the swipe, nothing
       // more happens until the next one (a touch fling is stopped dead).
       // Coming back up from below, the page just keeps moving.
       onEnter: function () {
+        // Told already, and somehow not yet retired (it retires as soon as
+        // you're back above it): pass straight through rather than stop. The
+        // far end of the pinned stretch looks the same (the section at the
+        // top either way), so jump there and let the scroll carry on.
+        if (gesture && desired >= N && !retired) { note('enter: pass through'); scrollWindowTo(st.end + 1); return; }
         lockTouch(true);
         var byTouch = gesture && (touching || performance.now() - lastTouchTs < 2500), byWheel = recentInput();
         note('enter', { byWheel: byWheel, byTouch: byTouch, resume: desired, blockH: block.offsetHeight, innerH: inner.offsetHeight, font: getComputedStyle(paras[0]).fontSize });
@@ -885,7 +903,7 @@
     else if (steps[m - 1].mark) hideCaret();
     else placeCaret(steps[m - 1].units[steps[m - 1].units.length - 1]);
     announce();
-    if (m >= N && window.pageYOffset >= st.end) retire();            // landed below it (back button): already seen
+    window.addEventListener('scroll', maybeRetire, { passive: true });   // see retire
 
     // ---- version A: one gesture, one sentence ----
     function recentInput() { return performance.now() - lastInputTs < 300; }
@@ -930,7 +948,6 @@
       hurry = 0; pace = 1;
       note('leave-up');
       scrollWindowTo(st.start - 1);
-      retire();                                                      // if the story is told, that was the last of the pin
     }
 
     // Once the story is told, the swipe that leaves doesn't fling the page:
@@ -955,62 +972,36 @@
       gsap.to(proxy, {
         y: to, duration: CFG.exitTime, ease: 'power1.inOut',
         onUpdate: function () { scrollWindowTo(proxy.y); },
-        onComplete: function () { exiting = snapping = false; thaw(); retireSoon(); }
+        onComplete: function () { exiting = snapping = false; thaw(); ScrollTrigger.update(); }   // no layout change here: the section retires later, out of sight
       });
     }
 
-    // Once the story has been told and you've left the section (either way),
-    // it retires: the pin is taken out, so from then on it's just the finished
-    // story on the page and scrolling passes straight through it, up or down.
-    // Taking the pin out shortens the page by the pinned stretch; if you're
-    // below it, the scroll position moves up by the same amount, so nothing
-    // visibly jumps. (Version B keeps its pin: its story is scroll-driven.)
-    // The first thing after the section on the page (in document order, with
-    // some height): what you're looking at once the exit glide has landed.
-    function nextContent() {
-      var el = block.parentElement && block.parentElement.classList.contains('pin-spacer') ? block.parentElement : block;
-      for (; el && el !== document.body; el = el.parentElement) {
-        for (var sib = el.nextElementSibling; sib; sib = sib.nextElementSibling) {
-          if (sib.offsetHeight > 0 && !/^(SCRIPT|STYLE|LINK)$/.test(sib.tagName)) return sib;
-        }
-      }
-      return null;
+    // Retiring. Once the story has been told, the pin is taken out, so from
+    // then on it's just the finished story on the page and scrolling passes
+    // straight through it, up or down. It retires only once you're back above
+    // it: the section is a full screen tall, so what goes (the pinned stretch,
+    // and any spare height Squarespace gave the block) is all below the bottom
+    // of the screen, and nothing you can see moves. Below it, the page above
+    // you would shrink, and moving the scroll position to make up for that
+    // flashed on iPhones (they draw the shorter page a frame before the move),
+    // so after the exit glide the pin simply stays until you come back up.
+    // Checked on every scroll, when the pin is left upwards, and when a glide
+    // up lands. (Version B keeps its pin: its story is scroll-driven.)
+    function maybeRetire() {
+      if (retired || !gesture || desired < N || snapping || window.pageYOffset >= st.start) return;
+      retire();
     }
-    function describe(el) { return el ? el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + (el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\s+/).slice(0, 2).join('.') : '') : '-'; }
-
-    // The exit glide retires the section two frames after it lands: iOS
-    // applies a programmatic scroll a frame late, and retiring in the same
-    // frame as the glide's last scroll let the old position flash up in the
-    // new, shorter page.
-    function retireSoon() { requestAnimationFrame(function () { requestAnimationFrame(retire); }); }
-
     function retire() {
-      if (retired || !gesture || desired < N) return;
-      var scroller = document.scrollingElement || document.documentElement;
-      var len = st.end - st.start, y = window.pageYOffset, below = y >= st.end, docH = scroller.scrollHeight;
-      // Keep what you're looking at exactly where it is: below the section,
-      // that's the next content; above it, the section itself (the removed
-      // pinned stretch is below you, so nothing visible moves).
-      var ref = below ? (nextContent() || block) : block, refTop = ref.getBoundingClientRect().top;
-      var sec = block.closest('section'), secBefore = sec ? sec.offsetHeight : 0, blockBefore = block.offsetHeight;
       retired = true;
+      window.removeEventListener('scroll', maybeRetire);
+      var scroller = document.scrollingElement || document.documentElement, docH = scroller.scrollHeight;
+      var y = window.pageYOffset, len = st.end - st.start, top = block.getBoundingClientRect().top;
+      var sec = block.closest('section'), secBefore = sec ? sec.offsetHeight : 0, blockBefore = block.offsetHeight;
       unhold(); thaw(true); lockTouch(false); tOurs = false;
-      gsap.killTweensOf(proxy); snapping = exiting = false;
       st.kill(true);                                                 // unpin and remove the pin's spacing
-      // ScrollTrigger already moves the scroll position back by the pin's
-      // length when it un-pins; whatever that doesn't cover (the section's
-      // own height changing, a Squarespace minimum height) shows up as a
-      // leftover shift of what you're looking at. Correct only that, from
-      // where the page is now (never from the old position: that undid
-      // ScrollTrigger's correction and sent the page far past the next content).
-      var shift = ref.getBoundingClientRect().top - refTop;
-      var target = window.pageYOffset + shift;
-      if (Math.abs(shift) > 0.5) scrollWindowTo(target);             // same task as the kill, so no frame shows the jump
-      requestAnimationFrame(function () {                            // and once more, in case a late scroll lands on top
-        if (Math.abs(window.pageYOffset - target) > 2) { note('retire: re-applied', { was: Math.round(window.pageYOffset) }); scrollWindowTo(target); }
-      });
-      note('retire', { below: below, len: Math.round(len), shrank: Math.round(docH - scroller.scrollHeight), shift: Math.round(shift),
-                       from: Math.round(y), to: Math.round(window.pageYOffset), anchor: describe(ref),
+      note('retire', { len: Math.round(len), shrank: Math.round(docH - scroller.scrollHeight),
+                       from: Math.round(y), to: Math.round(window.pageYOffset), sectionTop: Math.round(top),
+                       moved: Math.round(block.getBoundingClientRect().top - top),   // 0: nothing on screen moved
                        blockH: blockBefore + '>' + block.offsetHeight, innerH: inner.offsetHeight,
                        section: sec ? secBefore + '>' + sec.offsetHeight + ' min ' + getComputedStyle(sec).minHeight : '-' });
       if (log) {                                                     // debug: does anything move the page afterwards?
@@ -1107,7 +1098,7 @@
       gsap.to(proxy, {
         y: to, duration: CFG.touchUpTime, ease: 'power2.out',
         onUpdate: function () { scrollWindowTo(proxy.y); },
-        onComplete: function () { snapping = false; thaw(); ScrollTrigger.update(); }
+        onComplete: function () { snapping = false; thaw(); ScrollTrigger.update(); maybeRetire(); }
       });
     }
 
