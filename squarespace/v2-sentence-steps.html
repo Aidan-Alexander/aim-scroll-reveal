@@ -855,7 +855,7 @@
       onEnter: function () {
         lockTouch(true);
         var byTouch = gesture && (touching || performance.now() - lastTouchTs < 2500), byWheel = recentInput();
-        note('enter', { byWheel: byWheel, byTouch: byTouch, resume: desired });
+        note('enter', { byWheel: byWheel, byTouch: byTouch, resume: desired, blockH: block.offsetHeight, innerH: inner.offsetHeight, font: getComputedStyle(paras[0]).fontSize });
         if (byTouch) freeze();
         // The swipe that arrives began outside the section, and it can't be
         // cancelled partway: Chrome only lets a page cancel a trackpad swipe
@@ -955,7 +955,7 @@
       gsap.to(proxy, {
         y: to, duration: CFG.exitTime, ease: 'power1.inOut',
         onUpdate: function () { scrollWindowTo(proxy.y); },
-        onComplete: function () { exiting = snapping = false; thaw(); retire(); }
+        onComplete: function () { exiting = snapping = false; thaw(); retireSoon(); }
       });
     }
 
@@ -965,20 +965,54 @@
     // Taking the pin out shortens the page by the pinned stretch; if you're
     // below it, the scroll position moves up by the same amount, so nothing
     // visibly jumps. (Version B keeps its pin: its story is scroll-driven.)
+    // The first thing after the section on the page (in document order, with
+    // some height): what you're looking at once the exit glide has landed.
+    function nextContent() {
+      var el = block.parentElement && block.parentElement.classList.contains('pin-spacer') ? block.parentElement : block;
+      for (; el && el !== document.body; el = el.parentElement) {
+        for (var sib = el.nextElementSibling; sib; sib = sib.nextElementSibling) {
+          if (sib.offsetHeight > 0 && !/^(SCRIPT|STYLE|LINK)$/.test(sib.tagName)) return sib;
+        }
+      }
+      return null;
+    }
+    function describe(el) { return el ? el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + (el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\s+/).slice(0, 2).join('.') : '') : '-'; }
+
+    // The exit glide retires the section two frames after it lands: iOS
+    // applies a programmatic scroll a frame late, and retiring in the same
+    // frame as the glide's last scroll let the old position flash up in the
+    // new, shorter page.
+    function retireSoon() { requestAnimationFrame(function () { requestAnimationFrame(retire); }); }
+
     function retire() {
       if (retired || !gesture || desired < N) return;
       var scroller = document.scrollingElement || document.documentElement;
       var len = st.end - st.start, y = window.pageYOffset, below = y >= st.end, docH = scroller.scrollHeight;
+      // Keep what you're looking at exactly where it is: below the section,
+      // that's the next content; above it, the section itself (the removed
+      // pinned stretch is below you, so nothing visible moves).
+      var ref = below ? (nextContent() || block) : block, refTop = ref.getBoundingClientRect().top;
+      var sec = block.closest('section'), secBefore = sec ? sec.offsetHeight : 0, blockBefore = block.offsetHeight;
       retired = true;
       unhold(); thaw(true); lockTouch(false); tOurs = false;
       gsap.killTweensOf(proxy); snapping = exiting = false;
       st.kill(true);                                                 // unpin and remove the pin's spacing
-      // Scroll back by exactly how much shorter the page got (measured, not
-      // assumed to be the pin length), in the same task as the kill, so no
-      // frame shows the jump.
-      var shrank = docH - scroller.scrollHeight;
-      if (below && shrank > 0) scrollWindowTo(y - shrank);
-      note('retire', { below: below, len: Math.round(len), shrank: Math.round(shrank), from: Math.round(y), to: Math.round(window.pageYOffset) });
+      // ScrollTrigger already moves the scroll position back by the pin's
+      // length when it un-pins; whatever that doesn't cover (the section's
+      // own height changing, a Squarespace minimum height) shows up as a
+      // leftover shift of what you're looking at. Correct only that, from
+      // where the page is now (never from the old position: that undid
+      // ScrollTrigger's correction and sent the page far past the next content).
+      var shift = ref.getBoundingClientRect().top - refTop;
+      var target = window.pageYOffset + shift;
+      if (Math.abs(shift) > 0.5) scrollWindowTo(target);             // same task as the kill, so no frame shows the jump
+      requestAnimationFrame(function () {                            // and once more, in case a late scroll lands on top
+        if (Math.abs(window.pageYOffset - target) > 2) { note('retire: re-applied', { was: Math.round(window.pageYOffset) }); scrollWindowTo(target); }
+      });
+      note('retire', { below: below, len: Math.round(len), shrank: Math.round(docH - scroller.scrollHeight), shift: Math.round(shift),
+                       from: Math.round(y), to: Math.round(window.pageYOffset), anchor: describe(ref),
+                       blockH: blockBefore + '>' + block.offsetHeight, innerH: inner.offsetHeight,
+                       section: sec ? secBefore + '>' + sec.offsetHeight + ' min ' + getComputedStyle(sec).minHeight : '-' });
       if (log) {                                                     // debug: does anything move the page afterwards?
         var until = performance.now() + 2000, onScroll = function () {
           if (performance.now() > until) { window.removeEventListener('scroll', onScroll); return; }
@@ -1262,6 +1296,10 @@
     blocks.forEach(function (block) { setup(block, reduced); });
     ScrollTrigger.refresh();
     window.addEventListener('load', function () { ScrollTrigger.refresh(); });
+    // The site's fonts can finish loading after the page has, and the real
+    // font sets the text taller or shorter: re-measure (and re-fit) then too,
+    // or the section's pinned size no longer matches its text.
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { ScrollTrigger.refresh(); });
   }
 
   function boot() {
