@@ -25,11 +25,13 @@ The text is the two `<p class="vs-reveal__p">` paragraphs near the top of the fi
 - `<strong>…</strong>` is the burgundy emphasis. It can start, end or sit inside a sentence.
 - Any number of sentences per paragraph. More than two paragraphs also works: each new paragraph dims the one before it.
 - To control the split by hand (a sentence you want typed in two beats, or a line with no full stop), wrap each piece of that paragraph in `<span class="vs-s">…</span>`. Once a paragraph uses `vs-s`, it is split only on those spans, so wrap every part. Paragraph 1 does this, because to the automatic rule ".." followed by a lower-case word isn't a sentence end.
-- To keep two sentences together as one step, wrap them in `<span class="vs-join">…</span>`. The full stop inside gets a longer beat (`stopPause`).
+- To keep two sentences together as one step, wrap them in `<span class="vs-join">…</span>`. One swipe then types them all, with a slightly longer pause (`beatPause`, 0.45s) at each full stop inside; each sentence gets its own `maxStepTime`. Paragraph 2's last three sentences are joined this way. A `..` inside a `vs-s` span gets the same pause (paragraph 1: "the promotion.. the career…").
 - Sentences of 3 words or fewer (`noPauseWords`) type in one run, with no pause between words, so "Or choose impact." lands as one beat.
 - The wordmark ("Start something that matters") is the `<div class="vs-reveal__mark">` after the paragraphs: an inline SVG whose letters are `<path>`s. It is the final step, after the last sentence: its words pop in one at a time (`markWordTime`, `markPopFrom`), with the gaps between them set by `markGaps` (start>something, something>that, that>matters: the middle one is longer, so it reads as two pairs), and paragraph 2 stays exactly as it is. To swap the artwork, replace the `<svg>` and the `aria-label`, and wrap each word's `<path>`s in a `<g data-vs-word="…">` as the current one does (without the groups the script guesses words from the gaps between letters, which goes wrong on italic faces whose letters overlap). Colour, width and the space above it are `--vs-mark-color`, `--vs-mark-width` and `--vs-mark-gap`. Delete the div to have no wordmark.
 
 A blinking caret sits after the last typed letter (steady while typing, blinking while it waits for the next scroll, gone once the wordmark takes over). `caret: false` removes it; `--vs-caret-color` recolours it (default: the text colour).
+
+A "Scroll" hint with a bobbing arrow fades in at the bottom of the section whenever the story is waiting and nobody moves on: `hintDelay` (2s) after the first sentence, `hintAgain` (3s) after later ones. The next swipe, scroll or click hides it, and it stops for good once the wordmark is in (a tester didn't realise they had to scroll and thought the page was broken). The label is `hintText` ("Scroll", phones too); `--vs-hint-color` recolours it; `hint: false` removes it.
 
 ## Impatient and returning visitors
 
@@ -57,7 +59,7 @@ Colours and type are CSS variables at the top of the `<style>` (`--vs-color`, `-
 - `mode`: `'gesture'` (A) or `'scroll'` (B).
 - `stepDistance`: screen-heights of scrolling per sentence in version B (0.5).
 - `hold` / `holdGesture`: how long the finished text stays before the page moves on.
-- `charStagger`, `charPause`, `maxStepTime`: the typing speed. The letters of a word land `charStagger` apart; every word boundary adds a pause around `charPause` long (random 0.6×–1.6×; `commaPause` times longer after a comma, `stopPause` after a full stop mid-step); `maxStepTime` caps a whole sentence, squeezing long ones proportionally.
+- `charStagger`, `charPause`, `maxStepTime`: the typing speed. The letters of a word land `charStagger` apart; every word boundary adds a pause around `charPause` long (random 0.6×–1.6×; `commaPause` times longer after a comma, `beatPause` seconds after a full stop mid-step); `maxStepTime` caps each sentence, squeezing long ones proportionally.
 - `charJitter`: how uneven the letters are. 0 is metronomic with no word pauses; the default is 0.5; 1 is very uneven.
 - `dimOpacity`, `dimScale`: how far the earlier paragraph recedes.
 

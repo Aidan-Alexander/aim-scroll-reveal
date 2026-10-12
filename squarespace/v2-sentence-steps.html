@@ -38,9 +38,9 @@
          paragraph uses them, wrap every part. <strong> = the burgundy
          emphasis. See README.                                              -->
 
-    <p class="vs-reveal__p"><span class="vs-s">Choose the predictable path..</span> <span class="vs-s">the promotion..</span> <span class="vs-s">the career everyone thinks is great, but feels empty.</span></p>
+    <p class="vs-reveal__p"><span class="vs-s">Choose the predictable path..</span> <span class="vs-s">the promotion.. the career everyone thinks is great, but feels empty.</span></p>
 
-    <p class="vs-reveal__p">Or choose <strong>impact</strong>. Choose to <strong>follow the evidence</strong>, wherever it leads. Choose red-eye flights and ungodly heat. Choose saving the <strong>lives of thousands of people</strong> you&rsquo;ll never meet. Choose more <strong>meaning</strong> than you know what to do with..</p>
+    <p class="vs-reveal__p">Or choose <strong>impact</strong>. Choose to <strong>follow the evidence</strong>, wherever it leads. <span class="vs-join">Choose red-eye flights and ungodly heat. Choose saving the <strong>lives of thousands of people</strong> you&rsquo;ll never meet. Choose more <strong>meaning</strong> than you know what to do with..</span></p>
 
     <!-- THE WORDMARK. Appears last, word by word, after the paragraphs; paragraph 2 stays as it is.
          Any inline SVG works: wrap each word's <path>s in a <g data-vs-word="..."> as below.
@@ -199,6 +199,24 @@
 .vs-reveal__caret.is-on.is-typing { animation: none; }
 @keyframes vs-caret-blink { 50% { opacity: 0; } }
 
+/* The "scroll" hint: fades in under the story whenever it's waiting and
+   nobody has moved on for a few seconds; gone at the next swipe or click,
+   and for good once the story is told.
+   Created by the script (CFG.hint). */
+.vs-reveal__hint {
+  position: absolute; left: 50%; bottom: max(4vh, 1.5rem);
+  display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+  color: var(--vs-hint-color, var(--vs-color));
+  font-size: 1.1rem; letter-spacing: 0.14em; text-transform: uppercase; line-height: 1;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 0.5rem);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.vs-reveal__hint.is-on { opacity: 0.85; transform: translate(-50%, 0); }
+.vs-reveal__hint svg { width: 2.2rem; height: 2.2rem; animation: vs-hint-bob 1.6s ease-in-out infinite; }
+@keyframes vs-hint-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(0.5rem); } }
+
 /* The wordmark (an inline SVG) that appears last, word by word. */
 .vs-reveal__mark { width: 100%; max-width: var(--vs-mark-width); margin-top: var(--vs-mark-gap); }
 .vs-reveal__mark svg { display: block; width: 100%; height: auto; }
@@ -264,6 +282,10 @@
     mode:         'gesture',  // 'gesture' = version A: each scroll gesture types one sentence, the page waits
                               // 'scroll'  = version B: sentences type as you scroll past them, nothing is held
     caret:        true,       // a blinking cursor at the end of the typed text (steady while typing, gone for the wordmark)
+    hint:         true,       // a "Scroll" prompt with a bobbing arrow whenever the story waits and nobody moves on (gone at the next swipe)
+    hintDelay:    2,          // seconds of waiting after the first sentence before it first fades in
+    hintAgain:    3,          // seconds of waiting after any later sentence before it comes back
+    hintText:     'Scroll',   // its label (phones too)
     debug:        false,      // record every scroll decision in window.__vsLog, for diagnosing (the preview's ?debug=1 turns it on)
 
     // Scroll geometry, in screen-heights
@@ -277,10 +299,10 @@
     charStagger:  0.03,       // the letters of a word land this far apart...
     charPause:    0.07,       // ...and every word boundary adds a pause about this long (random 0.6x-1.6x)
     commaPause:   1.8,        // that pause, times this, after , ; :
-    stopPause:    5,          // and times this after . ! ? in the middle of a step (two sentences kept together by vs-join or vs-s)
     charJitter:   0.5,        // how uneven the letters are: 0 = metronomic and no word pauses; 1 = very uneven
     noPauseWords: 3,          // sentences this short (in words) come out in one run, no word pauses ("Or choose impact.")
     maxStepTime:  2.0,        // long sentences speed up so none takes longer than this
+    beatPause:    0.45,       // seconds of pause after . ! ? in the middle of a step (sentences kept together by vs-join or vs-s); each part gets its own maxStepTime
 
     // The wordmark at the end: one word at a time, each popping in
     markWordTime: 0.3,        // seconds a word takes to fade in
@@ -564,19 +586,20 @@
       var prevPara = lastPara;
       lastPara = el;
       splitSentences(collectWords(el)).forEach(function (group, gi) {
-        var units = [], breaks = [], punct = [];
+        var units = [], breaks = [], punct = [], beat = [];
         group.forEach(function (w) {
           var ws = Array.prototype.slice.call(w.el.querySelectorAll('.vs-u'));
           ws.forEach(function (u, j) {
             var prev = units[units.length - 1], pt = prev ? prev.textContent : '';
             breaks.push(j === 0 && !!prev);
-            punct.push(!prev ? 0 : /[.!?…]$/.test(pt) ? CFG.stopPause : PUNCT.test(pt) ? CFG.commaPause : 0);
+            beat.push(j === 0 && !!prev && /[.!?…]$/.test(pt));
+            punct.push(!prev ? 0 : PUNCT.test(pt) ? CFG.commaPause : 0);
             units.push(u);
           });
         });
         textUnits.push.apply(textUnits, units);
         var first = gi === 0 && !!prevPara;
-        steps.push({ units: units, breaks: breaks, punct: punct, noPause: group.length <= CFG.noPauseWords,
+        steps.push({ units: units, breaks: breaks, punct: punct, beat: beat,
                      dim: first ? [prevPara] : [], grow: first ? [el] : [] });
       });
     });
@@ -621,6 +644,34 @@
     }
     function hideCaret() { if (caret) caret.classList.remove('is-on', 'is-typing'); }
     function caretTyping(on) { if (caret) caret.classList.toggle('is-typing', !!on); }
+
+    // ---- "scroll" hint ----
+    // Whenever a sentence is typed and nothing happens for a moment
+    // (hintDelay after the first sentence, hintAgain after later ones), a
+    // label and a bobbing arrow fade in at the bottom. Moving on hides it;
+    // once the story is told it never comes back.
+    var hint = null, hintTimer = null, hintDone = false, hintSeen = false;
+    if (CFG.hint) {
+      hint = document.createElement('div');
+      hint.className = 'vs-reveal__hint';
+      hint.setAttribute('aria-hidden', 'true');
+      hint.innerHTML = '<span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+        'stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+      hint.firstChild.textContent = CFG.hintText;
+      block.appendChild(hint);
+    }
+    function updateHint() {
+      if (!hint || hintDone) return;
+      clearTimeout(hintTimer);
+      hint.classList.remove('is-on');
+      if (retired || shown >= N) { hintDone = true; return; }              // the story is told, wordmark included
+      if (desired !== shown || shown < 1) return;                           // typing, or not started
+      hintTimer = setTimeout(function () {
+        if (hintDone) return;
+        hintSeen = true;
+        hint.classList.add('is-on');
+      }, (hintSeen ? CFG.hintAgain : CFG.hintDelay) * 1000);
+    }
 
     // ---- state ----
     var gesture = CFG.mode === 'gesture';
@@ -701,6 +752,7 @@
     }
 
     function announce() {
+      updateHint();
       try {
         block.dispatchEvent(new CustomEvent('vs-reveal:step', {
           bubbles: true,
@@ -709,27 +761,38 @@
       } catch (e) {}
     }
 
-    // When each letter switches on, relative to the start of its sentence.
+    // When each letter switches on, relative to the start of its step.
     // With jitter > 0 the letters land slightly unevenly and every word
-    // boundary adds a pause (the space, then a breath; longer after
-    // punctuation), so words arrive as little runs; very short sentences skip
-    // the pauses. Then, if the sentence would run past maxStepTime,
-    // everything is squeezed to fit.
+    // boundary adds a pause (the space, then a breath; longer after a
+    // comma), so words arrive as little runs; very short sentences skip
+    // the pauses. Then, if a sentence would run past maxStepTime, it is
+    // squeezed to fit. A step holding several sentences (vs-join, or "..")
+    // types them one after another, beatPause apart, each capped on its own.
     function startTimes(step, base, dur, jitter) {
-      var t = 0, times = [0], n = step.units.length;
-      for (var i = 1; i < n; i++) {
-        var gap = base;
-        if (jitter > 0) {
-          gap *= 1 + jitter * 0.5 * (Math.random() * 2 - 1);                  // subtle jitter
-          if (step.breaks[i] && !step.noPause) {                               // new word
-            gap += base + CFG.charPause * (0.6 + Math.random()) * (step.punct[i] || 1);
+      var n = step.units.length, times = [], offset = 0, from = 0;
+      for (var end = 1; end <= n; end++) {
+        if (end < n && !step.beat[end]) continue;
+        var words = 1, i;
+        for (i = from + 1; i < end; i++) if (step.breaks[i]) words++;
+        var noPause = words <= CFG.noPauseWords;
+        var t = 0, local = [0];
+        for (i = from + 1; i < end; i++) {
+          var gap = base;
+          if (jitter > 0) {
+            gap *= 1 + jitter * 0.5 * (Math.random() * 2 - 1);                // subtle jitter
+            if (step.breaks[i] && !noPause) {                                  // new word
+              gap += base + CFG.charPause * (0.6 + Math.random()) * (step.punct[i] || 1);
+            }
           }
+          t += gap;
+          local.push(t);
         }
-        t += gap;
-        times.push(t);
+        var room = Math.max(0.05, CFG.maxStepTime - dur);
+        var squeeze = t > room ? room / t : 1;
+        local.forEach(function (x) { times.push(offset + x * squeeze); });
+        offset += t * squeeze + dur + CFG.beatPause;
+        from = end;
       }
-      var room = Math.max(0.05, CFG.maxStepTime - dur);
-      if (t > room) for (var j = 0; j < n; j++) times[j] *= room / t;
       return times;
     }
 
