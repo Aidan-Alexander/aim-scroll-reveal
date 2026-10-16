@@ -287,7 +287,7 @@
     hintDelay:    1,          // seconds of waiting after the first sentence before it first fades in
     hintAgain:    1.5,        // seconds of waiting after any later sentence before it comes back
     hintText:     'Scroll',   // its label (phones too)
-    autoAdvance:  4,          // version A: seconds the story waits on a typed step before typing the next one by itself (0 = never); not after a step marked data-vs-wait, and it never leaves the section by itself
+    autoAdvance:  0.8,        // version A: seconds after a step is typed before the next one types by itself (0 = never): one swipe after the opening line plays the rest; not after a step marked data-vs-wait, and it never leaves the section by itself
     debug:        false,      // record every scroll decision in window.__vsLog, for diagnosing (the preview's ?debug=1 turns it on)
 
     // Scroll geometry, in screen-heights
@@ -677,10 +677,10 @@
     }
 
     // ---- auto-advance (CFG.autoAdvance, version A) ----
-    // A safety net for people who don't realise they have to scroll: once a
-    // step is typed and nothing happens for autoAdvance seconds, the next
-    // one types itself (a quiet step: no hurrying, no cooldown). Any gesture
-    // restarts the wait. It never fires while the section isn't pinned (the
+    // After the opening line, one swipe plays the whole story: once a step
+    // is typed, the next one types itself after autoAdvance seconds (a
+    // quiet step: no hurrying, no cooldown; the gap reads as the pause
+    // between paragraphs). A gesture in the gap just types it sooner. It never fires while the section isn't pinned (the
     // reader has scrolled away), never after a step marked data-vs-wait (the
     // opening line: the reader makes the first move), and never leaves the
     // section: the last step waits for a real gesture, as before.
