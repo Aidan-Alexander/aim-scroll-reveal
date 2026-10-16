@@ -684,10 +684,10 @@
     // reader has scrolled away), never after a step marked data-vs-wait (the
     // opening line: the reader makes the first move), and never leaves the
     // section: the last step waits for a real gesture, as before.
-    var autoTimer = null;
+    var autoTimer = null, interacted = false;   // interacted: a real gesture has moved the story (a reload that lands mid-story shows its state and waits)
     function updateAuto() {
       clearTimeout(autoTimer);
-      if (!gesture || !(CFG.autoAdvance > 0) || retired) return;
+      if (!gesture || !(CFG.autoAdvance > 0) || retired || !interacted) return;
       if (desired !== shown || shown < 1 || shown >= N) return;             // typing, not started, or told
       if (steps[shown - 1].wait) return;                                    // this step waits for a real gesture
       autoTimer = setTimeout(function () {
@@ -945,6 +945,7 @@
         // types what it passes); scrolling back up never undoes anything.
         var k = Math.max(desired, stepAt(self));
         if (log && k !== desired) note('scroll-step', { to: k });
+        if (k !== desired) interacted = true;                            // a scrollbar drag counts as a gesture
         setDesired(k);
       },
       onLeave:     function () { note('leave'); lockTouch(false); unhold(); if (!snapping) setDesired(N); },
@@ -984,26 +985,6 @@
       }
     });
 
-    // Early start: the section is a full screen tall with the text in the
-    // middle, so waiting for the pin meant a screen of blank space scrolled
-    // past before anything happened (testers read it as empty or broken).
-    // Instead, the caret and the first sentence start the moment the text's
-    // place reaches the bottom of the screen, while the page is still
-    // scrolling normally; by the time the section pins, the line is typed
-    // or nearly, and the pin just holds there as before. Only on the way
-    // down, only the first time, and nothing else about arrival changes
-    // (the pin's own onEnter finds desired already at 1 and just holds).
-    ScrollTrigger.create({
-      trigger: inner,
-      start: 'top 96%',
-      onEnter: function () {
-        if (retired || desired > 0 || shown > 0) return;
-        note('early-start');
-        placeCaret(null);
-        setDesired(1);
-      }
-    });
-
     // Landing mid-section (reload, back button): show the state without animating.
     var m = stepAt(st);
     for (var i = 1; i <= m; i++) tls[i].progress(1, true);
@@ -1013,6 +994,31 @@
     else placeCaret(steps[m - 1].units[steps[m - 1].units.length - 1]);
     announce();
     window.addEventListener('scroll', maybeRetire, { passive: true });   // see retire
+
+    // Early start: the section is a full screen tall with the text in the
+    // middle, so waiting for the pin meant a screen of blank space scrolled
+    // past before anything happened (testers read it as empty or broken).
+    // Instead, the caret and the first sentence start the moment the text's
+    // place reaches the bottom of the screen, while the page is still
+    // scrolling normally; by the time the section pins, the line is typed
+    // or nearly, and the pin just holds there as before. Only on the way
+    // down, only the first time, and nothing else about arrival changes
+    // (the pin's own onEnter finds desired already at 1 and just holds).
+    // Not on a reload that lands inside or below the pin (the browser puts
+    // the page back where it was, the trigger is already past its start,
+    // and ScrollTrigger fires onEnter for that at creation): the landing
+    // code above has shown the right state, and a swipe carries on from it.
+    ScrollTrigger.create({
+      trigger: inner,
+      start: 'top 96%',
+      onEnter: function () {
+        if (retired || desired > 0 || shown > 0) return;
+        if (window.pageYOffset >= st.start) { note('early-start: skipped, inside the pin'); return; }
+        note('early-start');
+        placeCaret(null);
+        setDesired(1);
+      }
+    });
 
     // ---- version A: one gesture, one sentence ----
     function recentInput() { return performance.now() - lastInputTs < 300; }
@@ -1027,6 +1033,7 @@
       var now = performance.now();
       lastInputTs = now;
       if (!quiet) {
+        interacted = true;
         // Impatience: a gesture while a sentence is still typing, or hot on the
         // heels of the last one, finishes the current sentence at once and plays
         // the next faster; each hurried gesture in a row is faster still.
