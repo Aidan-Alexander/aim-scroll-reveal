@@ -984,6 +984,26 @@
       }
     });
 
+    // Early start: the section is a full screen tall with the text in the
+    // middle, so waiting for the pin meant a screen of blank space scrolled
+    // past before anything happened (testers read it as empty or broken).
+    // Instead, the caret and the first sentence start the moment the text's
+    // place reaches the bottom of the screen, while the page is still
+    // scrolling normally; by the time the section pins, the line is typed
+    // or nearly, and the pin just holds there as before. Only on the way
+    // down, only the first time, and nothing else about arrival changes
+    // (the pin's own onEnter finds desired already at 1 and just holds).
+    ScrollTrigger.create({
+      trigger: inner,
+      start: 'top 96%',
+      onEnter: function () {
+        if (retired || desired > 0 || shown > 0) return;
+        note('early-start');
+        placeCaret(null);
+        setDesired(1);
+      }
+    });
+
     // Landing mid-section (reload, back button): show the state without animating.
     var m = stepAt(st);
     for (var i = 1; i <= m; i++) tls[i].progress(1, true);
